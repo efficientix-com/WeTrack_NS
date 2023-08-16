@@ -1,0 +1,25 @@
+<suitelet scriptid="customscript_tkio_wetrack_validatexml_sl">
+  <description></description>
+  <isinactive>F</isinactive>
+  <name>TKIO - WeTrack ValidateXML - SL</name>
+  <notifyadmins>F</notifyadmins>
+  <notifyemails></notifyemails>
+  <notifyowner>T</notifyowner>
+  <notifyuser>F</notifyuser>
+  <scriptfile>[/SuiteScripts/WeTrack&amp;Trace/TKIO - WeTrack ValidateXML - SL.js]</scriptfile>
+  <scriptdeployments>
+    <scriptdeployment scriptid="customdeploy_tkio_wetrack_validatexml_sl">
+      <allemployees>T</allemployees>
+      <allpartners>F</allpartners>
+      <allroles>T</allroles>
+      <audslctrole></audslctrole>
+      <eventtype></eventtype>
+      <isdeployed>T</isdeployed>
+      <isonline>F</isonline>
+      <loglevel>DEBUG</loglevel>
+      <runasrole>ADMINISTRATOR</runasrole>
+      <status>RELEASED</status>
+      <title>TKIO - WeTrack ValidateXML - SL</title>
+    </scriptdeployment>
+  </scriptdeployments>
+</suitelet>

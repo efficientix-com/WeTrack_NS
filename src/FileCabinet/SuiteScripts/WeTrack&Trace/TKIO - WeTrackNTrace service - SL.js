@@ -31,7 +31,6 @@ define(['N/log', 'N/search', 'N/record', 'N/format', 'N/query', 'N/runtime'],
                 //     details: params
                 // });
                 // track_query();
-                // search_for_tracing(SEARCH_ID, SEARCH_TYPE);
                 if (params.getSearchVendors) {
                     var scriptObj = runtime.getCurrentScript();
                     var script_parameters = scriptObj.getParameter({ name: 'custscript_tkio_wetrack_configuration' });
@@ -142,14 +141,14 @@ define(['N/log', 'N/search', 'N/record', 'N/format', 'N/query', 'N/runtime'],
                         }
                         resultData.push(resultObject);
                         // log.debug({
-                        //     title: "ResultObject",
+                        //     title: "ResultObject search_type",
                         //     details: resultObject
                         // });
                         resultObject = {};
                         return true;
                     });
                 }
-                log.audit({ title: "search_for_tracing RETURNING", details: resultData });
+                log.audit({ title: "search_for_tracing RETURNING "+search_type, details: resultData });
                 return resultData;
 
             } catch (err) {

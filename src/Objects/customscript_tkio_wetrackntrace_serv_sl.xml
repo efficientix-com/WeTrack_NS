@@ -1,0 +1,25 @@
+<suitelet scriptid="customscript_tkio_wetrackntrace_serv_sl">
+  <description></description>
+  <isinactive>F</isinactive>
+  <name>TKIO - WeTrackNTrace service - SL</name>
+  <notifyadmins>F</notifyadmins>
+  <notifyemails></notifyemails>
+  <notifyowner>T</notifyowner>
+  <notifyuser>F</notifyuser>
+  <scriptfile>[/SuiteScripts/WeTrack&amp;Trace/TKIO - WeTrackNTrace service - SL.js]</scriptfile>
+  <scriptdeployments>
+    <scriptdeployment scriptid="customdeploy_tkio_wetrackntrace_serv_sl">
+      <allemployees>F</allemployees>
+      <allpartners>F</allpartners>
+      <allroles>T</allroles>
+      <audslctrole></audslctrole>
+      <eventtype></eventtype>
+      <isdeployed>T</isdeployed>
+      <isonline>F</isonline>
+      <loglevel>DEBUG</loglevel>
+      <runasrole>ADMINISTRATOR</runasrole>
+      <status>TESTING</status>
+      <title>TKIO - WeTrackNTrace service - SL</title>
+    </scriptdeployment>
+  </scriptdeployments>
+</suitelet>

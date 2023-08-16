@@ -1,245 +1,693 @@
 /**
  * @NApiVersion 2.1
- * @NScriptType Suitelet
+ * @NScriptType Restlet
  */
-define(['N/file', 'N/https', 'N/log', 'N/ui/serverWidget', 'N/xml', 'N/record', 'N/search'],
-    /**
- * @param{file} file
- * @param{https} https
- * @param{log} log
- * @param{serverWidget} serverWidget
- * @param{xml} xml
- */
-    (file, https, log, serverWidget, xml, record, search) => {
+define(['N/log', 'N/encode', 'N/file', 'N/xml', 'N/record', 'N/search', 'N/runtime'],
+
+    (log, encode, file, xml, record, search, runtime) => {
         /**
-         * Defines the Suitelet script trigger point.
-         * @param {Object} scriptContext
-         * @param {ServerRequest} scriptContext.request - Incoming request
-         * @param {ServerResponse} scriptContext.response - Suitelet response
+         * Defines the function that is executed when a GET request is sent to a RESTlet.
+         * @param {Object} requestParams - Parameters from HTTP request URL; parameters passed as an Object (for all supported
+         *     content types)
+         * @returns {string | Object} HTTP response body; returns a string when request Content-Type is 'text/plain'; returns an
+         *     Object when request Content-Type is 'application/json' or 'application/xml'
          * @since 2015.2
          */
+        // Transaction Information Variables por Packing Hierarchies
         var global_obj_items = [];
         var global_obj_items_aux = [];
         var global_obj_single_items = [];
         var global_obj = [];
 
+        // Transaction History Variables por Packing Hierarchies
         var global_obj_items_receiving = [];
         var global_obj_items_aux_receiving = [];
         var global_obj_single_items_receiving = [];
         var global_obj_receiving = [];
+
+
         var file_id_uploaded = null;
+        var id_record_transactionInformation = '';
+        var epcis_is_correct = {
+            record_id: '',
+            success: false,
+            message: ''
+        }
+        var CUSTOM_RECORD_ID_SUITETRACE_GRP = 'customrecord_tkio_suitetrace_grouping';
         var CUSTOM_RECORD_ID_EPCIS = 'customrecord_tkio_wetrack_xml';
+        var CUSTOM_RECORD_EPCIS_TRANSACTION = 'customrecord_tkio_wetrack_epcis_transact';
         var CUSTOM_RECORD_ID = 'customrecord_wetrack_transaction';
         var CUSTOM_SHIPMENT_CONTENT_RECORD_ID = 'customrecord_tkio_wetrack_shipment_cntnt';
-        const onRequest = (scriptContext) => {
-            try {
-                let params = scriptContext.request.parameters;
-                let response = scriptContext.response;
-                // new_registry_track();
-                // let data_EPCIS_uploads = searchEPCIS_uploads();
-                // log.emergency({
-                //     title: "Data EPCIS Uploads",
-                //     details: data_EPCIS_uploads
-                // });
-                // get3Ts('54960').then(resp=>{
+        const get = (requestParams) => {
 
-                //     log.debug({
-                //         title: "resp_3ts",
-                //         details: resp
-                //     });
-                // });
-                if (scriptContext.request.method === 'POST') {
-                    // Handle POST request
-                    var requestBody = scriptContext.request.body;
-                    log.debug({
-                        title: "POST from VUE MedTracing",
-                        details: requestBody
-                    });
-                    // 1. Valida que el XML esté como define el esquema EPCIS 1.2.
-                    var isValidXML = validateXML(requestBody);
-                    log.debug({
-                        title: "isValidXML",
-                        details: isValidXML
-                    });
-                    let date = Date.now();
-                    var fileObj = file.create({
-                        name: 'EPCIS-' + date + '.xml',
-                        fileType: file.Type.XMLDOC,
-                        contents: requestBody
-                    });
-                    fileObj.folder = 3682;
-                    file_id_uploaded = fileObj.save();
-                    log.debug({
-                        title: "file_id_uploaded",
-                        details: file_id_uploaded
-                    });
-
-                    // 2. Convierte de XML a JSON para inicar recorrido de validaciones de contenido
-                    var obj_xml = getXMLJSON(requestBody);
-
-                    // log.debug({
-                    //     title: "obj_xml",
-                    //     details: JSON.stringify(obj_xml)
-                    // });
-                    // 3. Realiza validaciones y mapeo de datos de contenido según DSCSA
-                    var transactionInformationObj = getTransactionInformationSummary(JSON.stringify(obj_xml));
-                    var transactionHistoryObj = getTransactionHistoryReloaded(JSON.stringify(obj_xml));
-                    var transactionStatementObj = getTransactionStatement(JSON.stringify(obj_xml));
-                    var get_transaction_items=transactionInformationObj.transactionEvent;
-                    var get_pos_ti = transactionInformationObj.purchaseOrders;
-                    get_items_info(get_transaction_items,'');
-                    make_registry(get_pos_ti, file_id_uploaded);
-
-                    // log.debug({
-                    //     title: "transactionStatementObj",
-                    //     details: transactionStatementObj
-                    // });
-                    // log.debug({
-                    //     title: "TransactionHistoryObj NEW",
-                    //     details: transactionHistoryObj
-                    // });
-                    // log.debug({
-                    //     title: "TransactionHistoryObj NEW",
-                    //     details: transactionHistoryObj[0].products_information
-                    // });
-                    // log.debug({
-                    //     title: "TransactionHistoryObj NEW",
-                    //     details: transactionHistoryObj[0].sender_info
-                    // });
-                    // log.debug({
-                    //     title: "transactionInformationObj.transactionEvent",
-                    //     details: transactionInformationObj.transactionEvent
-                    // });
-                    log.debug({
-                        title: "transactionInformationObj",
-                        details: transactionInformationObj.purchaseOrders
-                    });
-                    // Mandar respuesta de que todo está bien debe ser al final por si existe algo que debería ser obligatorio en la evaluación de contenido del archivo XML
-                    if (isValidXML) {
-                        scriptContext.response.write(JSON.stringify(obj_xml));
-                    } else {
-                        scriptContext.response.write('Error: invalid XML');
-                    }
-                    // Process the request body data as needed
-                }
-                if (scriptContext.request.method === 'GET') {
-                    if (params.get3Ts) {
-                        get3Ts(params.get3Ts).then((resp) => {
-                            log.debug({
-                                title: "resp in get3Ts request",
-                                details: resp
-                            });
-                            response.write({
-                                output: resp + ''
-                            });
-                        })
-                    }
-                    if (params.getEPCISUploads) {
-                        let resp = searchEPCIS_uploads();
-                        response.write({
-                            output: resp
-                        });
-                    }
-                }
-                // else {
-                //     // Handle other HTTP methods (GET, PUT, DELETE, etc.)
-                //     // You can provide appropriate responses or redirect to a different page
-                //     scriptContext.response.write('Invalid request method');
-                // }
-            } catch (err) {
-                scriptContext.response.write("An error ocurred on validating the XML file:" + err);
-                log.error({
-                    title: "Error occured onRequest",
-                    details: err
-                });
-            }
         }
-        function get_items_info(items_hierarchy,product_information){
+
+        /**
+         * Defines the function that is executed when a PUT request is sent to a RESTlet.
+         * @param {string | Object} requestBody - The HTTP request body; request body are passed as a string when request
+         *     Content-Type is 'text/plain' or parsed into an Object when request Content-Type is 'application/json' (in which case
+         *     the body must be a valid JSON)
+         * @returns {string | Object} HTTP response body; returns a string when request Content-Type is 'text/plain'; returns an
+         *     Object when request Content-Type is 'application/json' or 'application/xml'
+         * @since 2015.2
+         */
+        const put = (requestBody) => {
+
+        }
+
+        /**
+         * Defines the function that is executed when a POST request is sent to a RESTlet.
+         * @param {string | Object} requestBody - The HTTP request body; request body is passed as a string when request
+         *     Content-Type is 'text/plain' or parsed into an Object when request Content-Type is 'application/json' (in which case
+         *     the body must be a valid JSON)
+         * @returns {string | Object} HTTP response body; returns a string when request Content-Type is 'text/plain'; returns an
+         *     Object when request Content-Type is 'application/json' or 'application/xml'
+         * @since 2015.2
+         */
+        const post = (requestBody) => {
+            try {
+                var scriptObj = runtime.getCurrentScript();
+                var folderID = scriptObj.getParameter({ name: 'custscript_tkio_wetrack_epcis_folder_id' });
+                if (folderID !== '') {
+
+                    let gln = requestBody.gln;
+                    if (!gln) {
+                        epcis_is_correct.success = false;
+                        epcis_is_correct.message = "Missing 'gln' in JSON";
+                        epcis_is_correct.record_id = '';
+                    } else {
+                        let decoded = encode.convert({
+                            string: requestBody.file_content,
+                            inputEncoding: encode.Encoding.BASE_64,
+                            outputEncoding: encode.Encoding.UTF_8
+                        });
+
+                        // log.debug({
+                        //     title: "Decoded content",
+                        //     details: decoded
+                        // });
+                        let date = Date.now();
+                        var fileObj = file.create({
+                            name: 'EPCIS-' + gln + " - " + date + '.xml',
+                            fileType: file.Type.XMLDOC,
+                            contents: decoded
+                        });
+                        fileObj.folder = folderID;
+                        file_id_uploaded = fileObj.save();
+                        validateXML(decoded);
+                        epcis_is_correct.record_id = make_suitetrace_grouping_registry(file_id_uploaded);
+                        
+
+                        // log.debug({
+                        //     title: "file_id_uploaded",
+                        //     details: file_id_uploaded
+                        // });
+
+                        // 2. Convierte de XML a JSON para inicar recorrido de validaciones de contenido
+                        // var obj_xml = getXMLJSON(decoded);
+
+                        // 3. Realiza validaciones y mapeo de datos de contenido según DSCSA
+                        // var transactionInformationObj = getTransactionInformationSummary(JSON.stringify(obj_xml));
+                        // var transactionHistoryObj = getTransactionHistoryReloaded(JSON.stringify(obj_xml));
+                        // var transactionStatementObj = getTransactionStatement(JSON.stringify(obj_xml));
+                        // var get_transaction_items = transactionInformationObj.transactionEvent;
+                        // var get_transaction_products_information = transactionInformationObj.products_information;
+
+
+
+                        // log.emergency({
+                        //     title: "TRANSACTION INFORMATION OUTPUT",
+                        //     details: transactionInformationObj.transactionEvent
+                        // });
+                        // log.emergency({
+                        //     title: "TRANSACTION INFORMATION OUTPUT SUMMARY",
+                        //     details: transactionHistoryObj
+                        // });
+                        // Validaciones contra NS de la info del archivo
+                        // get_items_info(get_transaction_items, get_transaction_products_information, transactionInformationObj.senderId, transactionInformationObj.receiverId, transactionInformationObj.senderIdOfLocationOrigin, transactionInformationObj.receiverIdOfLocation, transactionInformationObj.timeTransaction, false);
+                        // transactionHistoryObj.forEach(element => {
+                        //     log.emergency({
+                        //         title: "TRANSACTION HISTORY OUTPUT",
+                        //         details: element.shipment_content
+                        //     });
+                        //     get_items_info(element.shipment_content, element.products_information, element.senderId, element.receiverId, element.senderIdOfLocationOrigin, element.receiverIdOfLocation, element.timeTransaction, true);
+                        // })
+
+                    }
+
+                } else {
+                    epcis_is_correct.success = false;
+                    epcis_is_correct.record_id = '';
+                    epcis_is_correct.message = 'Folder ID not set, please contact support.'
+                }
+
+                return JSON.stringify(epcis_is_correct)
+
+            } catch (err) {
+                log.error({ title: 'Error occurred in post', details: err });
+            }
+
+        }
+        function make_suitetrace_grouping_registry(id_file){
             try{
-                log.emergency({
-                    title: "items_hierarchy",
-                    details: items_hierarchy
-                })
+                let obj_record=record.create({
+                    type: CUSTOM_RECORD_ID_SUITETRACE_GRP,
+                    isDynamic: true,
+                });
+
+                obj_record.setValue({
+                    fieldId:'custrecord_tkio_suitetrace_gr_file',
+                    value:id_file
+                });
+                let id_record=obj_record.save({
+                    enableSourcing: true,
+                    ignoreMandatoryFields: true
+                });
+                return id_record;
             
             }catch(err){
-            log.error({title:'Error occurred in get_items_info',details:err});
+            log.error({title:'Error occurred in make_suitetrace_grouping_registry',details:err});
             }
         }
-        function searchEPCIS_uploads() {
+        function get_items_info_history() {
             try {
-                let obj_to_return = [];
-                const customrecord_tkio_wetrack_xmlSearchColId = search.createColumn({ name: 'id', sort: search.Sort.ASC });
-                const customrecord_tkio_wetrack_xmlSearchColPurchaseOrders = search.createColumn({ name: 'custrecord_wetrack_xml_pos' });
-                const customrecord_tkio_wetrack_xmlSearchColEpcisFile = search.createColumn({ name: 'custrecord_wetrack_xml_epcis' });
-                const customrecord_tkio_wetrack_xmlSearchColIsSuspicious = search.createColumn({ name: 'custrecord_wetrack_xml_suspicious' });
-                const customrecord_tkio_wetrack_xmlSearchColTransactionDate = search.createColumn({ name: 'custrecord_wetrack_xml_date' });
 
-                const customrecord_tkio_wetrack_xmlSearch = search.create({
-                    type: 'customrecord_tkio_wetrack_xml',
-                    filters: [],
-                    columns: [
-                        customrecord_tkio_wetrack_xmlSearchColId,
-                        customrecord_tkio_wetrack_xmlSearchColPurchaseOrders,
-                        customrecord_tkio_wetrack_xmlSearchColEpcisFile,
-                        customrecord_tkio_wetrack_xmlSearchColIsSuspicious,
-                        customrecord_tkio_wetrack_xmlSearchColTransactionDate
-                    ],
+            } catch (err) {
+                log.error({ title: 'Error occurred in get_items_info_histroy', details: err });
+            }
+        }
+        function get_items_info(items_hierarchy, product_information, senderId, receiverId, senderIdOfLocationOrigin, receiverIdOfLocation, timeTransaction, isTH) {
+            try {
+                let items = [];
+                let items_levels = [];
+                if (items_hierarchy) {
+                    items_hierarchy.forEach(item => {
+                        if (item.outermost) {
+                            if (item.outermost.single_items !== []) {
+                                item.outermost.single_items.forEach(single_element => {
+                                    items_levels.push({
+                                        item: single_element,
+                                        level_1: item.outermost.id,
+                                        level_2: '',
+                                        level_3: '',
+                                        purchase_order: item.purchase_order.split(':')[5]
+                                    });
+                                    items.push(single_element);
+                                });
+                            }
+                            if (item.outermost.items_with_children !== []) {
+                                item.outermost.items_with_children.forEach(item_with_child => {
+                                    if (item_with_child.upper_parent) {
+                                        if (item_with_child.upper_parent.single_items !== []) {
+                                            item_with_child.upper_parent.single_items.forEach(single_item => {
+                                                items_levels.push({
+                                                    item: single_item,
+                                                    level_1: item.outermost.id,
+                                                    level_2: item_with_child.upper_parent.id,
+                                                    level_3: '',
+                                                    purchase_order: item.purchase_order.split(':')[5]
+                                                });
+                                                items.push(single_item);
+                                            })
+                                        }
+
+                                        if (item_with_child.upper_parent.parent_item !== []) {
+                                            item_with_child.upper_parent.parent_item.forEach(par_item => {
+                                                if (par_item.children_items !== []) {
+                                                    par_item.children_items.forEach(child_item => {
+                                                        items_levels.push({
+                                                            item: child_item,
+                                                            level_1: item.outermost.id,
+                                                            level_2: item_with_child.upper_parent.id,
+                                                            level_3: par_item.id,
+                                                            purchase_order: item.purchase_order.split(':')[5]
+                                                        });
+                                                        items.push(child_item);
+                                                    })
+                                                }
+                                            })
+                                        }
+                                    }
+                                    if (item_with_child.parent_item) {
+                                        item_with_child.parent_item.children_items.forEach(child_item => {
+                                            items_levels.push({
+                                                item: child_item,
+                                                level_1: item.outermost.id,
+                                                level_2: item_with_child.parent_item.id,
+                                                level_3: '',
+                                                purchase_order: item.purchase_order.split(':')[5]
+                                            });
+                                            items.push(child_item);
+                                        })
+
+                                    }
+                                    log.emergency({
+                                        title: "items_with children get_items_info",
+                                        details: item_with_child
+                                    });
+                                })
+                            }
+                        }
+                    })
+                }
+                const filteredArray = product_information.filter(obj => items.includes(obj.sgtin));
+                // get only the filteredArray data that we need
+                // Because this is the one that will be on the Custom Record
+                // This way, we can garantee that if the quantities are fine per NDC/item, then push this
+                // information into the Custom Record
+                let obj_to_custom_record = [];
+                filteredArray.forEach(element => {
+                    items_levels.forEach(item_w_level => {
+                        if (element.sgtin === item_w_level.item) {
+                            if (!isTH) {
+                                obj_to_custom_record.push({
+                                    is_th_from_file: false,
+                                    transaction_list: item_w_level.purchase_order,
+                                    lot_number: element.lotNumber,
+                                    ndc: element.itemIdentification,
+                                    senderId: senderId,
+                                    senderIdOfLocationOrigin: senderIdOfLocationOrigin,
+                                    receiverId: receiverId,
+                                    receiverIdOfLocation: receiverIdOfLocation,
+                                    shipment_date: timeTransaction,
+                                    level_1: item_w_level.level_1,
+                                    level_2: item_w_level.level_2,
+                                    level_3: item_w_level.level_3,
+                                    po_history: '',
+                                    lot_is_suspicious: false,
+                                    is_in_quarantine: false,
+                                    expirationDate: element.expirationDate,
+                                    sgtin: element.sgtin
+
+                                });
+                            } else {
+                                obj_to_custom_record.push({
+                                    is_th_from_file: true,
+                                    transaction_list: '',
+                                    lot_number: element.lotNumber,
+                                    ndc: element.itemIdentification,
+                                    senderId: senderId,
+                                    senderIdOfLocationOrigin: senderIdOfLocationOrigin,
+                                    receiverId: receiverId,
+                                    receiverIdOfLocation: receiverIdOfLocation,
+                                    shipment_date: timeTransaction,
+                                    level_1: item_w_level.level_1,
+                                    level_2: item_w_level.level_2,
+                                    level_3: item_w_level.level_3,
+                                    po_history: item_w_level.purchase_order,
+                                    lot_is_suspicious: false,
+                                    is_in_quarantine: false,
+                                    expirationDate: element.expirationDate,
+                                    sgtin: element.sgtin
+
+                                });
+                            }
+                        }
+
+                    })
+                });
+                const groupedData = obj_to_custom_record.reduce((result, item) => {
+                    const key = `${item.ndc}-${item.lot_number}-${item.expirationDate}-${item.transaction_list}`;
+
+                    if (!result[key]) {
+                        result[key] = {
+                            ndc: item.ndc,
+                            lot_number: item.lot_number,
+                            expirationDate: item.expirationDate,
+                            purchaseOrder: item.transaction_list,
+                            quantity: 1
+                        };
+                    } else {
+                        result[key].quantity++;
+                    }
+
+                    return result;
+                }, {});
+                // This one will compare if the quantity per NDC matches the ones in the Purchase Order
+                // Quantity must be equal or less than the desired because you have to consider partialities.
+
+                const resultArray = Object.values(groupedData);
+                if (!isTH) {
+
+                    let correct_info_count = 0;
+                    resultArray.forEach(element => {
+
+                        let res_search = compareContentWithPurchaseOrder(element.purchaseOrder, element.lot_number, element.ndc, element.quantity, obj_to_custom_record);
+                        log.emergency({
+                            title: "res_search get_items_info",
+                            details: res_search
+                        });
+                        if (res_search === true) {
+                            log.emergency({
+                                title: "res_search is true with this info:",
+                                details: element
+                            });
+                            correct_info_count++;
+                        } else {
+                            epcis_is_correct.record_id = '';
+                            epcis_is_correct.message = 'Purchase Order with items described in EPCIS were not found. Verify items in EPCIS';
+                            epcis_is_correct.success = false;
+                        }
+                    });
+
+                    if (correct_info_count === resultArray.length) {
+                        // Make registry
+                        obj_to_custom_record.forEach(obj => {
+                            createEPCISTransaction(obj, false);
+                        })
+                    }
+                } else {
+
+                    obj_to_custom_record.forEach(obj => {
+                        createEPCISTransaction(obj, true);
+                    })
+                }
+
+
+
+                // log.emergency({
+                //     title: "items get_items_info",
+                //     details: items
+                // });
+                // log.emergency({
+                //     title: "items_hierarchy get_items_info",
+                //     details: items_hierarchy
+                // });
+                // log.emergency({
+                //     title: "product_information get_items_info",
+                //     details: product_information
+                // });
+                // log.emergency({
+                //     title: "filteredArray get_items_info",
+                //     details: filteredArray
+                // });
+                log.emergency({
+                    title: "resultArray get_items_info",
+                    details: resultArray
+                });
+                log.emergency({
+                    title: "obj_to_custom_record get_items_info",
+                    details: obj_to_custom_record
                 });
 
-                const customrecord_tkio_wetrack_xmlSearchPagedData = customrecord_tkio_wetrack_xmlSearch.runPaged({ pageSize: 1000 });
-                for (let i = 0; i < customrecord_tkio_wetrack_xmlSearchPagedData.pageRanges.length; i++) {
-                    const customrecord_tkio_wetrack_xmlSearchPage = customrecord_tkio_wetrack_xmlSearchPagedData.fetch({ index: i });
-                    customrecord_tkio_wetrack_xmlSearchPage.data.forEach((result) => {
-                        const id = result.getValue(customrecord_tkio_wetrack_xmlSearchColId);
-                        const purchaseOrders = result.getValue(customrecord_tkio_wetrack_xmlSearchColPurchaseOrders);
-                        const epcisFile = result.getValue(customrecord_tkio_wetrack_xmlSearchColEpcisFile);
-                        const isSuspicious = result.getValue(customrecord_tkio_wetrack_xmlSearchColIsSuspicious);
-                        const transactionDate = result.getValue(customrecord_tkio_wetrack_xmlSearchColTransactionDate);
+            } catch (err) {
+                log.error({ title: 'Error occurred in get_items_info', details: err });
+            }
+        }
+        function createEPCISTransaction(obj, isTH) {
+            try {
+                log.emergency({
+                    title: "obj from createEPCISTransaction",
+                    details: obj
+                });
+                let objRecord = record.create({
+                    type: CUSTOM_RECORD_EPCIS_TRANSACTION,
+                    isDynamic: false,
+                });
+                if (!isTH) {
 
-                        obj_to_return.push({
-                            id: id,
-                            purchaseOrders: purchaseOrders,
-                            epcisFile: epcisFile,
-                            isSuspicious: isSuspicious,
-                            date: transactionDate,
-                            three_ts: get3Ts(epcisFile)
-                        });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_is_th_file',
+                        value: false
+                    });
+                    objRecord.setText({
+                        fieldId: 'custrecord_tkio_transaction_list',
+                        text: 'Purchase Order #' + obj.transaction_list
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_wetrack_lot_number',
+                        value: obj.lot_serial
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_lot_location',
+                        value: obj.lot_location
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_wetrack_gtin',
+                        value: obj.item_value
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_wetrack_sgln',
+                        value: obj.senderId
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_receiver_sgln',
+                        value: obj.receiverId
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_shipment_date',
+                        value: obj.shipment_date
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_wetrack_level_1',
+                        value: obj.level_1
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_wetrack_level_2',
+                        value: obj.level_2
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_wetrack_level_3',
+                        value: obj.level_3
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_po_history',
+                        value: obj.po_history
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_lot_is_suspicious',
+                        value: obj.lot_is_suspicious
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_is_in_quarantine',
+                        value: obj.is_in_quarantine
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_sender_loc_sgln',
+                        value: obj.senderIdOfLocationOrigin
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_receiver_loc_sgln',
+                        value: obj.receiverIdOfLocation
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_sgtin',
+                        value: obj.sgtin
+                    });
+
+                    id_record_transactionInformation = objRecord.save();
+                } else {
+                    retrieve_compare_NDC_withTH_item(obj.ndc, obj);
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_is_th_file',
+                        value: obj.is_th_from_file
+                    });
+
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_wetrack_lot_number',
+                        value: obj.lot_number
+                    });
+
+                    objRecord.setValue({
+                        fieldId: 'custrecord_wetrack_gtin',
+                        value: obj.item_value
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_wetrack_sgln',
+                        value: obj.senderId
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_receiver_sgln',
+                        value: obj.receiverId
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_shipment_date',
+                        value: obj.shipment_date
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_wetrack_level_1',
+                        value: obj.level_1
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_wetrack_level_2',
+                        value: obj.level_2
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_wetrack_level_3',
+                        value: obj.level_3
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_po_history',
+                        value: obj.po_history
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_lot_is_suspicious',
+                        value: obj.lot_is_suspicious
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_is_in_quarantine',
+                        value: obj.is_in_quarantine
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_sender_loc_sgln',
+                        value: obj.senderIdOfLocationOrigin
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_receiver_loc_sgln',
+                        value: obj.receiverIdOfLocation
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_sgtin',
+                        value: obj.sgtin
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_wetrack_ti_id_related',
+                        value: id_record_transactionInformation
+                    });
+                    objRecord.save();
+
+
+                }
+
+
+            } catch (err) {
+                log.error({ title: 'Error occurred in createEPCISTransaction', details: err });
+            }
+
+        }
+        function retrieve_compare_NDC_withTH_item(item_ndc, obj_to_custom_record) {
+            try {
+                const itemSearchColName = search.createColumn({ name: 'itemid', sort: search.Sort.ASC });
+                const itemSearchColDisplayName = search.createColumn({ name: 'displayname' });
+                const itemSearchColInternalId = search.createColumn({ name: 'internalid' });
+
+                const itemSearch = search.create({
+                    type: 'item',
+                    filters: [
+                        ['name', search.Operator.IS, item_ndc],
+                    ],
+                    columns: [
+                        itemSearchColName,
+                        itemSearchColDisplayName,
+                        itemSearchColInternalId,
+
+                    ],
+                });
+                // Note: Search.run() is limited to 4,000 results
+                // itemSearch.run().each((result: search.Result): boolean => {
+                //   return true;
+                // });
+                const itemSearchPagedData = itemSearch.runPaged({ pageSize: 1000 });
+                for (let i = 0; i < itemSearchPagedData.pageRanges.length; i++) {
+                    const itemSearchPage = itemSearchPagedData.fetch({ index: i });
+                    itemSearchPage.data.forEach((result) => {
+                        // const name = result.getValue(itemSearchColName);
+                        // const displayName = result.getValue(itemSearchColDisplayName);
+                        const internalId = result.getValue(itemSearchColInternalId);
+                        obj_to_custom_record.item_value = internalId;
 
                     });
                 }
-                // log.emergency({
-                //     title: "obj,
-                //     details: obj_to_return[0].three_ts.transaction_information.receiver_info
-                // });
 
-                return JSON.stringify(obj_to_return);
             } catch (err) {
-                log.error({ title: 'Error occurred in searchEPCIS_uploads', details: err });
+                log.error({ title: 'Error occurred in retrueve_compare_NDCwithTH_item', details: err });
             }
         }
-        function get3Ts(file_id) {
+        function compareContentWithPurchaseOrder(po, lot, item_ndc, quantity_received, obj_to_custom_record) {
             try {
-                var fileObj = file.load({
-                    id: file_id
+                let search_res = false;
+                // log.emergency({
+                //     title: "Received parameters:",
+                //     details: po + ', '+lot+', '+item_ndc+', '+quantity_received
+                // });
+                const purchaseorderSearchColItem = search.createColumn({ name: 'item' });
+                const purchaseorderSearchColQuantity = search.createColumn({ name: 'quantity' });
+                const purchaseorderSearchColDocumentNumber = search.createColumn({ name: 'tranid' });
+                const purchaseorderSearchColSeriallotNumber = search.createColumn({ name: 'serialnumber', join: 'item' });
+                const purchaseorderSearchColSeriallotNumberLocation = search.createColumn({ name: 'serialnumberlocation', join: 'item' });
+                const purchaseorderSearch = search.create({
+                    type: 'purchaseorder',
+                    filters: [
+                        ['type', search.Operator.ANYOF, 'PurchOrd'],
+                        'AND',
+                        ['approvalstatus', search.Operator.ANYOF, '2'],
+                        'AND',
+                        ['numbertext', search.Operator.IS, po],
+                        'AND',
+                        ['mainline', search.Operator.IS, 'F'],
+                        'AND',
+                        ['item.serialnumber', search.Operator.IS, lot],
+                        'AND',
+                        ['status', search.Operator.ANYOF, 'PurchOrd:F', 'PurchOrd:E', 'PurchOrd:D'],
+                    ],
+                    columns: [
+                        purchaseorderSearchColItem,
+                        purchaseorderSearchColQuantity,
+                        purchaseorderSearchColDocumentNumber,
+                        purchaseorderSearchColSeriallotNumber,
+                        purchaseorderSearchColSeriallotNumberLocation,
+                    ],
                 });
-                let obj_to_return = {
-                    transaction_information: null,
-                    transaction_history: null,
-                    transaction_statement: null
-                };
-                let file_content_str = fileObj.getContents();
-                var obj_xml = getXMLJSON(file_content_str);
-                var transactionInformationObj = getTransactionInformationSummary(JSON.stringify(obj_xml));
-                var transactionHistoryObj = getTransactionHistoryReloaded(JSON.stringify(obj_xml));
-                var transactionStatementObj = getTransactionStatement(JSON.stringify(obj_xml));
+                // Note: Search.run() is limited to 4,000 results
+                // purchaseorderSearch.run().each((result: search.Result): boolean => {
+                //   return true;
+                // });
+                const purchaseorderSearchPagedData = purchaseorderSearch.runPaged({ pageSize: 1000 });
+                for (let i = 0; i < purchaseorderSearchPagedData.pageRanges.length; i++) {
+                    const purchaseorderSearchPage = purchaseorderSearchPagedData.fetch({ index: i });
+                    purchaseorderSearchPage.data.forEach((result) => {
+                        const item = result.getText(purchaseorderSearchColItem);
+                        const item_val = result.getValue(purchaseorderSearchColItem);
+                        const quantity = result.getValue(purchaseorderSearchColQuantity);
+                        const documentNumber = result.getValue(purchaseorderSearchColDocumentNumber);
+                        const seriallotNumber = result.getValue(purchaseorderSearchColSeriallotNumber);
+                        const seriallotNumberLocation = result.getValue(purchaseorderSearchColSeriallotNumberLocation);
+                        if (item === item_ndc && (quantity_received <= quantity)) {
+                            obj_to_custom_record.forEach(obj => {
+                                if (obj.ndc === item) {
+                                    obj.item_value = item_val;
+                                    obj.lot_serial = seriallotNumber;
+                                    obj.lot_location = seriallotNumberLocation;
 
-                obj_to_return.transaction_information = transactionInformationObj;
-                obj_to_return.transaction_history = transactionHistoryObj;
-                obj_to_return.transaction_statement = transactionStatementObj;
+                                }
+                            });
+                            search_res = true;
+                        }
+                        // log.emergency({
+                        //     title: "Actual found:",
+                        //     details: item + ', '+quantity+', '+documentNumber+', '+seriallotNumber+', '+seriallotNumberLocation
+                        // });
+                    });
+                }
 
-                return obj_to_return;
+                return search_res;
+
             } catch (err) {
-                log.error({ title: 'Error occurred in get3Ts', details: err });
+                log.error({ title: 'Error occurred in compareContentWithPurchaseOrder', details: err });
+            }
+        }
+        function validateXML(xml_body) {
+            try {
+                var xmlDocument = xml.Parser.fromString({
+                    text: xml_body
+                });
+                xml.validate({
+                    xml: xmlDocument,
+                    xsdFilePathOrId: 'SuiteBundles/Bundle 492865/EpcisFiles/epcisSchema.xsd',
+                    importFolderPathOrId: 'SuiteBundles/Bundle 492865/EpcisFiles'
+                });
+                epcis_is_correct.message = 'Valid XML';
+                epcis_is_correct.success = true;
+                return true;
+            } catch (err) {
+                epcis_is_correct.record_id = '';
+                epcis_is_correct.message = err;
+                epcis_is_correct.success = false;
+                log.error({
+                    title: "Error ocurred in ValidateXML",
+                    details: err
+                });
+                return false;
             }
         }
         function make_registry(purchase_orders, file_id) {
@@ -250,10 +698,10 @@ define(['N/file', 'N/https', 'N/log', 'N/ui/serverWidget', 'N/xml', 'N/record', 
                 });
                 let currentDate = new Date();
                 let str_pos = '';
-                purchase_orders.forEach((po,index,arr) => {
-                    if(index!==arr.length-1){
+                purchase_orders.forEach((po, index, arr) => {
+                    if (index !== arr.length - 1) {
                         str_pos += po + ','
-                    }else{
+                    } else {
                         str_pos += po
                     }
                 });
@@ -273,193 +721,6 @@ define(['N/file', 'N/https', 'N/log', 'N/ui/serverWidget', 'N/xml', 'N/record', 
 
             } catch (err) {
                 log.error({ title: 'Error occurred in make_registry', details: err });
-            }
-        }
-        async function new_registry_track() {
-            try {
-                let aux_record_id = '';
-                let objRecord = record.create({
-                    type: CUSTOM_RECORD_ID,
-                    isDynamic: false,
-                });
-                // SETTING RECEIVING FIELDS
-                objRecord.setValue({
-                    fieldId: 'custrecord_wetrack_receiver_sgln',
-                    value: 'urn:epc:id:sgln:039999.999929.0'
-                });
-                objRecord.setValue({
-                    fieldId: 'custrecord_wetrack_receiver_sgln_loc',
-                    value: 'urn:epc:id:sgln:039999.999925.0'
-                });
-                objRecord.setValue({
-                    fieldId: 'custrecord_wetrack_receiver_company_name',
-                    value: 'Healix Infusion Therapy'
-                });
-                objRecord.setValue({
-                    fieldId: 'custrecord_wetrack_receiver_addr_one',
-                    value: '211 La Ladera'
-                });
-                objRecord.setValue({
-                    fieldId: 'custrecord_wetrack_receiver_addr_two',
-                    value: '365 Eglinton'
-                });
-                objRecord.setValue({
-                    fieldId: 'custrecord_wetrack_receiver_city',
-                    value: 'Houston'
-                });
-                objRecord.setValue({
-                    fieldId: 'custrecord_wetrack_receiver_state',
-                    value: 'Texas'
-                });
-                objRecord.setValue({
-                    fieldId: 'custrecord_wetrack_receiver_postal_code',
-                    value: '76148'
-                });
-                objRecord.setValue({
-                    fieldId: 'custrecord_receiver_country_code',
-                    value: 'US'
-                });
-                // SETTING SENDER FIELDS
-                objRecord.setValue({
-                    fieldId: 'custrecord_wetrack_sgln_owningpty',
-                    value: 'urn:epc:id:sgln:030001.111124.0'
-                });
-                objRecord.setValue({
-                    fieldId: 'custrecord_wetrack_sgln_location',
-                    value: 'urn:epc:id:sgln:030001.111123.0'
-                });
-                objRecord.setValue({
-                    fieldId: 'custrecord_wetrack_name',
-                    value: 'Tekiio'
-                });
-                objRecord.setValue({
-                    fieldId: 'custrecord_wetrack_address_one',
-                    value: 'Ladera del Cubilete 207'
-                });
-                objRecord.setValue({
-                    fieldId: 'custrecord_wetrack_address_two',
-                    value: ''
-                });
-                objRecord.setValue({
-                    fieldId: 'custrecord_wetrack_city',
-                    value: 'Querétaro'
-                });
-                objRecord.setValue({
-                    fieldId: 'custrecord_wetrack_state',
-                    value: 'Querétaro'
-                });
-                objRecord.setValue({
-                    fieldId: 'custrecord_wetrack_postal_code',
-                    value: '2832'
-                });
-                objRecord.setValue({
-                    fieldId: 'custrecord_wetrack_country_code',
-                    value: 'MX'
-                });
-                aux_record_id = objRecord.save();
-                log.debug({
-                    title: "aux_record_id",
-                    details: aux_record_id
-                })
-                await register_shipment_content().then((res) => {
-                    var objRecord2 = record.load({
-                        type: CUSTOM_RECORD_ID,
-                        id: aux_record_id,
-                        isDynamic: true,
-                    });
-                    // SETTING SHIPMENT CONTENT FIELDS
-                    objRecord2.setValue({
-                        fieldId: 'custrecord_wetrack_shipment_ctnt_fields',
-                        value: res
-                    });
-                    log.debug({
-                        title: "res",
-                        details: res
-                    })
-
-                    objRecord2.save();
-                });
-
-
-
-
-            } catch (err) {
-                log.error({ title: 'Error occurred in new_registry_track', details: err });
-            }
-        }
-        async function register_shipment_content() {
-            try {
-                let ids_shipment_content = [];
-
-                for (let i = 0; i <= 2; i++) {
-                    let objRecord3 = record.create({
-                        type: CUSTOM_SHIPMENT_CONTENT_RECORD_ID,
-                        isDynamic: false,
-                    });
-                    let id = '';
-                    objRecord3.setValue({
-                        fieldId: 'custrecord_tkio_wetrack_pack_type',
-                        value: '3'
-                    });
-                    objRecord3.setValue({
-                        fieldId: 'custrecord_tkio_wetrack_item',
-                        value: 'urn:epc:id:sgtin:0355154.444444.4546158751311,urn:epc:id:sgtin:0355154.444444.1545451245454,urn:epc:id:sgtin:0355154.444444.12212121212121'
-                    });
-                    objRecord3.setValue({
-                        fieldId: 'custrecord_wetrack_ndc',
-                        value: '05515439449'
-                    });
-                    objRecord3.setValue({
-                        fieldId: 'custrecord_wetrack_product_name',
-                        value: 'Paracetamol'
-                    });
-                    objRecord3.setValue({
-                        fieldId: 'custrecord_wetrack_manufacturer_of_trade',
-                        value: 'Curascript'
-                    });
-                    objRecord3.setValue({
-                        fieldId: 'custrecord_wetrack_dosage',
-                        value: 'PILL'
-                    });
-                    objRecord3.setValue({
-                        fieldId: 'custrecord_wetrack_strength',
-                        value: '200mg'
-                    });
-                    objRecord3.setValue({
-                        fieldId: 'custrecord_wetrack_net_content',
-                        value: '100 pills'
-                    });
-
-                    id = objRecord3.save();
-                    log.debug({
-                        title: "objRecord3",
-                        details: id
-                    })
-                    ids_shipment_content.push(id);
-
-                }
-                return ids_shipment_content;
-            } catch (err) {
-                log.error({ title: 'Error occurred in register_shipment_content', details: err });
-            }
-        }
-        function validateXML(xml_body) {
-            try {
-                var xmlDocument = xml.Parser.fromString({
-                    text: xml_body
-                });
-                xml.validate({
-                    xml: xmlDocument,
-                    xsdFilePathOrId: 'SuiteBundles/Bundle 492865/EpcisFiles/epcisSchema.xsd',
-                    importFolderPathOrId: 'SuiteBundles/Bundle 492865/EpcisFiles'
-                });
-                return true;
-            } catch (err) {
-                log.error({
-                    title: "Error ocurred in ValidateXML",
-                    details: err
-                });
-                return false;
             }
         }
         function getXMLJSON(xmlBody) {
@@ -579,6 +840,12 @@ define(['N/file', 'N/https', 'N/log', 'N/ui/serverWidget', 'N/xml', 'N/record', 
                     let eventList = jsonObj2.EPCISBody.EventList;
                     if (eventList) {
                         let objectEvent = jsonObj2.EPCISBody.EventList.ObjectEvent;
+                        let packing_AggregationEvent = [];
+                        jsonObj2.EPCISBody.EventList.AggregationEvent.forEach(event => {
+                            if (event.action['#text'] === 'ADD') {
+                                packing_AggregationEvent.push(event);
+                            }
+                        })
                         let shippingEvent = [];
                         if (objectEvent) {
                             for (let k in objectEvent) {
@@ -878,13 +1145,14 @@ define(['N/file', 'N/https', 'N/log', 'N/ui/serverWidget', 'N/xml', 'N/record', 
                                                             } else {
                                                                 epc_array.push(epc['#text']);
                                                             }
-                                                            var all_parentsID = getAllParentsID(jsonObj2.EPCISBody.EventList.AggregationEvent);
+
+                                                            var all_parentsID = getAllParentsID(packing_AggregationEvent);
                                                             // log.debug({
                                                             //     title: "All parents ID",
                                                             //     details: all_parentsID
                                                             // });
                                                             for (let o in epc_array) {
-                                                                item_isParent_receiving(epc_array[o], res.commissioning, all_parentsID, jsonObj2.EPCISBody.EventList.AggregationEvent);
+                                                                item_isParent_receiving(epc_array[o], res.commissioning, all_parentsID, packing_AggregationEvent);
                                                                 const array_only_upper_parent = global_obj_items_aux_receiving.filter(obj => obj.hasOwnProperty('upper_parent'));
                                                                 const array_without_upper_parent = global_obj_items_aux_receiving.filter(obj => !obj.hasOwnProperty('upper_parent'));
                                                                 // log.debug({
@@ -939,10 +1207,10 @@ define(['N/file', 'N/https', 'N/log', 'N/ui/serverWidget', 'N/xml', 'N/record', 
                                                                         items_with_children: mergedArray
                                                                     }
                                                                 });
-                                                                log.emergency({
-                                                                    title: "Ahhhhhh aqui anda pero ausilio",
-                                                                    details: global_obj_receiving
-                                                                });
+                                                                // log.emergency({
+                                                                //     title: "Ahhhhhh aqui anda pero ausilio",
+                                                                //     details: global_obj_receiving
+                                                                // });
 
                                                                 global_obj_items_receiving = [];
                                                                 global_obj_items_aux_receiving = [];
@@ -986,9 +1254,10 @@ define(['N/file', 'N/https', 'N/log', 'N/ui/serverWidget', 'N/xml', 'N/record', 
                                                                                     //     title: "SHIPPING EVENT EPCLIST",
                                                                                     //     details: epc_array
                                                                                     // });
-                                                                                    var all_parentsID = getAllParentsID(jsonObj2.EPCISBody.EventList.AggregationEvent);
+
+                                                                                    var all_parentsID = getAllParentsID(packing_AggregationEvent);
                                                                                     for (let o in epc_array) {
-                                                                                        item_isParent_receiving(epc_array[o], res.commissioning, all_parentsID, jsonObj2.EPCISBody.EventList.AggregationEvent);
+                                                                                        item_isParent_receiving(epc_array[o], res.commissioning, all_parentsID, packing_AggregationEvent);
                                                                                         const array_only_upper_parent = global_obj_items_aux_receiving.filter(obj => obj.hasOwnProperty('upper_parent'));
                                                                                         const array_without_upper_parent = global_obj_items_aux_receiving.filter(obj => !obj.hasOwnProperty('upper_parent'));
                                                                                         // log.debug({
@@ -1111,9 +1380,9 @@ define(['N/file', 'N/https', 'N/log', 'N/ui/serverWidget', 'N/xml', 'N/record', 
                                                                 //     title: "SHIPPING EVENT EPCLIST",
                                                                 //     details: epc_array
                                                                 // });
-                                                                var all_parentsID = getAllParentsID(jsonObj2.EPCISBody.EventList.AggregationEvent);
+                                                                var all_parentsID = getAllParentsID(packing_AggregationEvent);
                                                                 for (let o in epc_array) {
-                                                                    item_isParent_receiving(epc_array[o], res.commissioning, all_parentsID, jsonObj2.EPCISBody.EventList.AggregationEvent);
+                                                                    item_isParent_receiving(epc_array[o], res.commissioning, all_parentsID, packing_AggregationEvent);
                                                                     const array_only_upper_parent = global_obj_items_aux_receiving.filter(obj => obj.hasOwnProperty('upper_parent'));
                                                                     const array_without_upper_parent = global_obj_items_aux_receiving.filter(obj => !obj.hasOwnProperty('upper_parent'));
                                                                     // log.debug({
@@ -1246,10 +1515,10 @@ define(['N/file', 'N/https', 'N/log', 'N/ui/serverWidget', 'N/xml', 'N/record', 
                                                 let vocabularyElement = vocabularyList_array[j][k][x].VocabularyElementList.VocabularyElement;
                                                 let arrayProducts = [];
                                                 for (let m in vocabularyElement) {
-                                                    log.emergency({
-                                                        title: "vocabularyElement[m] EPCClass",
-                                                        details: vocabularyElement[m]
-                                                    });
+                                                    // log.emergency({
+                                                    //     title: "vocabularyElement[m] EPCClass",
+                                                    //     details: vocabularyElement[m]
+                                                    // });
                                                     if (vocabularyElement[m]._attributes) {
                                                         let idVocabularyElement = vocabularyElement[m]._attributes.id;
                                                         if (res.commissioning.length > 0) {
@@ -1676,489 +1945,6 @@ define(['N/file', 'N/https', 'N/log', 'N/ui/serverWidget', 'N/xml', 'N/record', 
                 log.error({ title: 'Error occurred in getTransactionHistoryReloaded', details: err });
             }
         }
-        function getTransactionHistorySummary(jsonObj) {
-
-            // Transaction History will be extracted from RECEIVING events
-            // There is no Transaction History when there are no receiving events => means the EPCIS file comes from a manufacturer
-            // Consider 2 scenarios for a supplier submitting this document
-            // 1. Supplier submitting the document is both manufacturer and distributor
-            // 2. Supplier submitting the document is only manufacturer
-            // 3. Supplier submitting the document is only distributor
-
-            // Proposed solution:
-            // 1. Get commmissionig event with all SGTINs and SSCC because either way they are the products that gonna be added to the supplychain
-            // 2. Read all receiving events but rearrange them chronologically with eventTime
-
-            // if there is no receiving event to create a Transaction History just use the shipping event as transaction History
-            // Because it could count as Transaction History that the manufacturer (first step of the supply chain) ships this fresh drug out of the oven to a trading partner
-
-            // Note: Receiving event contains information regarding where the supplier got the product
-            // Receiving event is equivalent to a shipping event BUT only for describing the drug track
-            try {
-                // Make Res variable an array because you will need to keep track per transactions between distributors
-                // Just consider that there could be multiple transactions between distributors til it arrived to Healix
-
-                let res_to_return = [];
-                let jsonObj2 = JSON.parse(jsonObj);
-
-                let epcisBody = jsonObj2.EPCISBody;
-                let receivingEvent = [];
-                let shippingEvent = [];
-                if (epcisBody) {
-                    let eventList = jsonObj2.EPCISBody.EventList;
-                    if (eventList) {
-                        let objectEvent = jsonObj2.EPCISBody.EventList.ObjectEvent;
-                        if (objectEvent) {
-                            for (let k in objectEvent) {
-                                let bizStep = objectEvent[k].bizStep['#text'];
-                                let res = {
-                                    eventTime: '',
-                                    addresses: '',
-                                    supplierId: '', //this is the supplier who is receiving the products
-                                    distributorIdOfLocationOrigin: '',
-                                    timeTransaction: '',
-                                    supplierIdOfLocation: '',
-                                    purchaseOrders: [],
-                                    invoices: [],
-                                    commissioning: [],
-                                    purchaseOrders_nextStep: []
-                                }
-                                let auxSupplierIds = [];
-                                if (bizStep.includes("receiving")) {
-                                    // log.debug({
-                                    //     title: "objectEvent[k].extension",
-                                    //     details: objectEvent[k].extension
-                                    // })
-                                    if (objectEvent[k].bizLocation) {
-                                        let bizLocation = objectEvent[k].bizLocation.id['#text'];
-                                        // log.debug({
-                                        //     title: "bizlocation",
-                                        //     details: bizLocation
-                                        // });
-                                        res.supplierId = bizLocation;
-                                        auxSupplierIds.push(bizLocation);
-                                    }
-                                    if (objectEvent[k].extension.sourceList) {
-                                        let sourceListSource = objectEvent[k].extension.sourceList.source;
-                                        for (let m in sourceListSource) {
-                                            // SourceList is were it came from, meaning the distributor of the supplier
-                                            if (sourceListSource[m]['#text']) {
-
-                                                receivingEvent.push(objectEvent[k]);
-                                                if (sourceListSource.length === 2) {
-                                                    res.distributorIdOfLocationOrigin = sourceListSource[1]['#text'];
-                                                } else {
-                                                    res.distributorIdOfLocationOrigin = sourceListSource[0]['#text'];
-                                                }
-
-                                            } else {
-                                                receivingEvent.push(objectEvent[k]);
-                                                res.distributorIdOfLocationOrigin = sourceListSource['#text'];
-
-                                            }
-                                        }
-                                    }
-                                    if (objectEvent[k].eventTime) {
-                                        let eventTimeShipment = objectEvent[k].eventTime['#text'];
-                                        res.timeTransaction = eventTimeShipment;
-                                    }
-                                    let auxKindexOfSender = 0;
-                                    // Get the id of the receiver Location to then get the full address in commissioning
-                                    if (objectEvent[k].extension.destinationList) {
-                                        let destinationListSource = objectEvent[k].extension.destinationList.destination;
-                                        log.debug({
-                                            title: "destinationListSource",
-                                            details: destinationListSource
-                                        });
-                                        for (let n in destinationListSource) {
-                                            log.debug({
-                                                title: "destinationListSource[n]",
-                                                details: destinationListSource[n]
-                                            });
-                                            if (destinationListSource[n]['#text']) {
-
-                                                // if (destinationListSource[n]['#text'] === res.supplierId) {
-                                                if (destinationListSource.length === 2) {
-                                                    res.supplierIdOfLocation = destinationListSource[1]['#text'];
-                                                } else {
-                                                    res.supplierIdOfLocation = destinationListSource['#text'];
-                                                }
-                                                auxKindexOfSender = k;
-                                                // }
-                                            } else {
-                                                log.debug({
-                                                    title: "destinationListSource['#text']",
-                                                    details: destinationListSource['#text']
-                                                })
-                                                // if (destinationListSource['#text'] === res.supplierId) {
-                                                res.supplierIdOfLocation = destinationListSource['#text'];
-                                                auxKindexOfSender = k;
-                                                // }
-                                            }
-                                        }
-                                    }
-                                    // Get transactionList that has POs and possible Invoice
-                                    log.debug({
-                                        title: "objectEvent[auxKindexOfSender].bizTransactionList",
-                                        details: objectEvent[auxKindexOfSender].bizTransactionList
-                                    })
-                                    log.debug({
-                                        title: "auxKindexOfSender",
-                                        details: auxKindexOfSender
-                                    })
-                                    if (objectEvent[auxKindexOfSender].bizTransactionList) {
-                                        let bizTransactionList = objectEvent[auxKindexOfSender].bizTransactionList;
-                                        for (let g in bizTransactionList) {
-                                            for (let h in bizTransactionList[g]) {
-                                                if (bizTransactionList[g][h]._attributes) {
-                                                    let typebizTransactionList = bizTransactionList[g][h]._attributes.type;
-                                                    if (typebizTransactionList) {
-                                                        if (typebizTransactionList === "urn:epcglobal:cbv:btt:po") {
-                                                            res.purchaseOrders.push(bizTransactionList[g][h]['#text']);
-                                                        }
-                                                        if (typebizTransactionList === "urn:epcglobal:cbv:btt:inv") {
-
-                                                            res.invoices.push(bizTransactionList[g][h]['#text']);
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-
-
-                                    res_to_return.push(res);
-                                }
-
-
-                                log.debug({
-                                    title: "entra",
-                                    details: bizStep
-                                })
-                                log.debug({
-                                    title: "res",
-                                    details: res
-                                })
-
-                            }
-
-                            // get shipping events that are related to the Receiving Event
-                            // Source ID/Supplier ID should be in sourceList of the Shipping Event.
-                            // Get the source and next location to where it was shipped.
-                            // iterate all over to avoid any problems rn, later you can improve all this code to make it more efficient
-                            for (let k2 in objectEvent) {
-                                let bizStep_auxiliary = objectEvent[k2].bizStep['#text'];
-                                if (bizStep_auxiliary.includes('shipping')) {
-                                    res_to_return.forEach(res => {
-                                        if (objectEvent[k2].extension.sourceList) {
-                                            let sourceListSource = objectEvent[k2].extension.sourceList.source;
-                                            for (let m in sourceListSource) {
-                                                if (sourceListSource[m]['#text']) {
-                                                    if (sourceListSource[m]['#text'] === res.supplierId) {
-                                                        shippingEvent.push(objectEvent[k2]);
-                                                        if (sourceListSource.length === 2) {
-                                                            res.senderIdOfLocationOrigin_nextStep = sourceListSource[1]['#text'];
-                                                        } else {
-                                                            res.senderIdOfLocationOrigin_nextStep = sourceListSource[0]['#text'];
-                                                        }
-                                                    }
-                                                } else {
-                                                    if (sourceListSource['#text'] === res.supplierId) {
-                                                        shippingEvent.push(objectEvent[k2]);
-                                                        res.senderIdOfLocationOrigin_nextStep = sourceListSource['#text']
-                                                    }
-
-                                                }
-                                            }
-                                        }
-                                        if (objectEvent[k2].eventTime) {
-                                            let eventTimeShipment = objectEvent[k2].eventTime['#text'];
-                                            res.timeTransaction_nextStep = eventTimeShipment;
-                                        }
-                                        let auxKindexOfSender = 0;
-                                        if (objectEvent[k2].extension.destinationList) {
-                                            let destinationListSource = objectEvent[k2].extension.destinationList.destination;
-                                            for (let n in destinationListSource) {
-                                                if (destinationListSource[n]['#text']) {
-                                                    if (destinationListSource.length === 2) {
-                                                        res.receiverIdOfLocation_nextStep = destinationListSource[1]['#text'];
-                                                    } else {
-                                                        res.receiverIdOfLocation_nextStep = destinationListSource['#text'];
-                                                    }
-                                                    auxKindexOfSender = k2;
-
-                                                } else {
-                                                    res.receiverIdOfLocation_nextStep = destinationListSource['#text'];
-                                                    auxKindexOfSender = k2;
-
-                                                }
-                                            }
-                                        }
-
-                                        // Get transactionList that has POs and possible Invoice
-                                        if (objectEvent[auxKindexOfSender].bizTransactionList) {
-                                            let bizTransactionList = objectEvent[auxKindexOfSender].bizTransactionList;
-                                            for (let g in bizTransactionList) {
-                                                for (let h in bizTransactionList[g]) {
-                                                    if (bizTransactionList[g][h]._attributes) {
-                                                        let typebizTransactionList = bizTransactionList[g][h]._attributes.type;
-                                                        if (typebizTransactionList) {
-                                                            if (typebizTransactionList === "urn:epcglobal:cbv:btt:po") {
-                                                                res.purchaseOrders_nextStep.push(bizTransactionList[g][h]['#text']);
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    })
-
-
-                                }
-                            }
-
-
-
-
-
-
-                            let lotNumbersAndExpirationDate = [];
-
-
-                            for (let k in objectEvent) {
-                                let bizStep = objectEvent[k].bizStep['#text'];
-
-                                if (bizStep.includes('commissioning')) {
-                                    log.debug({
-                                        title: "entra2",
-                                        details: true
-                                    });
-
-                                    res_to_return.forEach(res => {
-                                        global_obj_receiving = [];
-
-                                        if (objectEvent[k].bizLocation) {
-                                            let bizLocation = objectEvent[k].bizLocation.id['#text'];
-                                            log.debug({
-                                                title: "bizLocation === res.supplierIdOfLocation",
-                                                details: bizLocation === res.supplierIdOfLocation
-                                            })
-                                            log.debug({
-                                                title: "bizLocation",
-                                                details: bizLocation
-                                            })
-                                            log.debug({
-                                                title: "res.supplierIdOfLocation",
-                                                details: res.supplierIdOfLocation
-                                            })
-                                            if (bizLocation === res.supplierIdOfLocation) {
-
-                                                log.debug({
-                                                    title: "Commissioning of RECEIVING",
-                                                    details: objectEvent[k]
-                                                });
-                                                if (objectEvent[k].action['#text'] === "ADD") {
-                                                    if (objectEvent[k].eventTime && objectEvent[k].eventTimeZoneOffset && objectEvent[k].epcList) {
-                                                        if (objectEvent[k].extension) {
-                                                            if (objectEvent[k].extension.ilmd["cbvmda:lotNumber"] && objectEvent[k].extension.ilmd["cbvmda:itemExpirationDate"]) {
-                                                                let epcArray = objectEvent[k].epcList.epc;
-                                                                if (epcArray) {
-                                                                    epcArray.forEach(epc => {
-                                                                        if (!res.commissioning.includes(epc['#text'])) {
-                                                                            res.commissioning.push(epc['#text']);
-                                                                            if (!epc['#text'].includes('sscc')) {
-                                                                                lotNumbersAndExpirationDate.push({
-                                                                                    sgtin: epc['#text'],
-                                                                                    lotNumber: objectEvent[k].extension.ilmd["cbvmda:lotNumber"]['#text'],
-                                                                                    expirationDate: objectEvent[k].extension.ilmd["cbvmda:itemExpirationDate"]['#text']
-                                                                                });
-                                                                            }
-                                                                        }
-                                                                    })
-                                                                } else {
-                                                                    log.error({
-                                                                        title: "Commissioning event incomplete",
-                                                                        details: "Make sure to have epc in epcList"
-                                                                    });
-                                                                }
-                                                            } else {
-                                                                log.error({
-                                                                    title: "Commisioning event incomplete",
-                                                                    details: "Make sure to have lotNumber and itemExpirationDate information"
-                                                                });
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                                else {
-                                                    log.error({
-                                                        title: "Commissioning event incomplete",
-                                                        details: "Make sure that the action in commissioning event is ADD"
-                                                    });
-                                                }
-                                            }
-                                        } else {
-                                            log.error({
-                                                title: "bizLocation error",
-                                                details: "field is mandatory"
-                                            });
-                                        }
-                                        let transactionEvent = jsonObj2.EPCISBody.EventList.TransactionEvent;
-                                        if (transactionEvent) {
-                                            for (let y in transactionEvent) {
-                                                let eventTime_receiving = transactionEvent[y].eventTime;
-                                                if (transactionEvent[y].bizTransactionList) {
-                                                    log.debug({
-                                                        title: "transactionEvent[y].bizTransactionList RECEIVING",
-                                                        details: transactionEvent[y].bizTransactionList
-                                                    });
-                                                    if (transactionEvent[y].bizTransactionList.bizTransaction) {
-                                                        // log.debug({
-                                                        //     title: "transactionEvent[y].bizTransactionList.bizTransaction",
-                                                        //     details: transactionEvent[y].bizTransactionList.bizTransaction
-                                                        // });
-                                                        let bizTransaction_type = transactionEvent[y].bizTransactionList.bizTransaction._attributes.type;
-                                                        if (bizTransaction_type === "urn:epcglobal:cbv:btt:po") {
-                                                            // log.debug({
-                                                            //     title: "bizTransaction_type",
-                                                            //     details: bizTransaction_type
-                                                            // });
-                                                            let bizTransaction_po = transactionEvent[y].bizTransactionList.bizTransaction['#text'];
-                                                            // log.debug({
-                                                            //     title: "bizTransaction_po",
-                                                            //     details: bizTransaction_po
-                                                            // });
-
-                                                            for (let x in res.purchaseOrders_nextStep) {
-                                                                if (bizTransaction_po === res.purchaseOrders_nextStep[x]) {
-                                                                    // log.debug({
-                                                                    //     title: "bizTransaction_po - res.purchaseOrders[x]",
-                                                                    //     details: bizTransaction_po + '-' + res.purchaseOrders[x]
-                                                                    // });
-                                                                    // log.debug({
-                                                                    //     title: "bizTransaction_po === res.purchaseOrders[x]",
-                                                                    //     details: bizTransaction_po === res.purchaseOrders[x]
-                                                                    // });
-                                                                    let epcList = transactionEvent[y].epcList;
-                                                                    if (epcList) {
-                                                                        let epc = epcList.epc;
-                                                                        let epc_array = [];
-                                                                        if (epc.length) {
-                                                                            for (let epc_index in epc) {
-                                                                                epc_array.push(epc[epc_index]['#text']);
-                                                                            }
-                                                                        } else {
-                                                                            epc_array.push(epc['#text']);
-                                                                        }
-                                                                        var all_parentsID = getAllParentsID(jsonObj2.EPCISBody.EventList.AggregationEvent);
-                                                                        log.debug({
-                                                                            title: "All parents ID RECEIVING",
-                                                                            details: all_parentsID
-                                                                        });
-                                                                        for (let o in epc_array) {
-                                                                            item_isParent_receiving(epc_array[o], res.commissioning, all_parentsID, jsonObj2.EPCISBody.EventList.AggregationEvent);
-                                                                            const array_only_upper_parent = global_obj_items_aux_receiving.filter(obj => obj.hasOwnProperty('upper_parent'));
-                                                                            const array_without_upper_parent = global_obj_items_aux_receiving.filter(obj => !obj.hasOwnProperty('upper_parent'));
-                                                                            log.debug({
-                                                                                title: "array_only_upper_parent",
-                                                                                details: array_only_upper_parent
-                                                                            });
-                                                                            log.debug({
-                                                                                title: "array_without_upper_parent",
-                                                                                details: array_without_upper_parent
-                                                                            });
-                                                                            const groupedArray = {};
-                                                                            const all_single_items = {};
-                                                                            const all_single_items_aux = {};
-                                                                            array_only_upper_parent.forEach(obj => {
-                                                                                const upperParentId = obj.upper_parent.id;
-                                                                                if (!groupedArray.hasOwnProperty(upperParentId)) {
-                                                                                    groupedArray[upperParentId] = {
-                                                                                        upper_parent: {
-                                                                                            id: upperParentId,
-                                                                                            single_items: [],
-                                                                                            parent_item: [obj.upper_parent.parent_item] // Make parent_item an array
-                                                                                        }
-                                                                                    };
-                                                                                } else {
-                                                                                    groupedArray[upperParentId].upper_parent.parent_item.push(obj.upper_parent.parent_item); // Push the original information into the array
-                                                                                }
-                                                                                if (!all_single_items.hasOwnProperty(upperParentId)) {
-                                                                                    all_single_items[upperParentId] = {
-                                                                                        single_items: []
-                                                                                    }
-                                                                                }
-                                                                                if (!all_single_items_aux.hasOwnProperty(upperParentId)) {
-                                                                                    all_single_items_aux[upperParentId] = {
-                                                                                        single_items: []
-                                                                                    }
-                                                                                }
-                                                                                all_single_items[upperParentId].single_items.push(...obj.upper_parent.single_items);
-                                                                                groupedArray[upperParentId].upper_parent.single_items.push(...all_single_items_aux[upperParentId].single_items);
-                                                                            });
-                                                                            const resultArray = Object.values(groupedArray);
-                                                                            log.audit({
-                                                                                title: "resultArraY RECEIVING",
-                                                                                details: resultArray
-                                                                            });
-                                                                            // mergedArray contains the structure well-formed of the cases,bundles and items without repeating ids,etc
-                                                                            const mergedArray = array_without_upper_parent.concat(resultArray);
-                                                                            global_obj_receiving.push({
-                                                                                eventTime: eventTime_receiving,
-                                                                                purchase_order: res.purchaseOrders[x],
-                                                                                outermost: {
-                                                                                    id: epc_array[o],
-                                                                                    single_items: global_obj_single_items_receiving,
-                                                                                    items_with_children: mergedArray
-                                                                                }
-                                                                            });
-                                                                            global_obj_items_receiving = [];
-                                                                            global_obj_items_aux_receiving = [];
-                                                                            global_obj_single_items_receiving = [];
-                                                                        }
-                                                                    }
-
-                                                                } else {
-                                                                    //    when there is no Transaction Event, you should be using a Shipping
-
-                                                                }
-                                                                log.audit({
-                                                                    title: "global_obj_receiving",
-                                                                    details: global_obj_receiving
-                                                                });
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        } else {
-                                            log.debug({
-                                                title: "ah",
-                                                details: "not found"
-                                            })
-                                        }
-                                        res.shipping_items_nextStep = global_obj_receiving;
-                                    })
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    log.error({
-                        title: "EPCIS file error",
-                        details: "EPCISBody not found"
-                    });
-                }
-
-                return res_to_return;
-
-            } catch (err) {
-                log.error({
-                    title: "Error occurred in getTransactionHistorySummary",
-                    details: err
-                });
-            }
-        }
         function getTransactionInformationSummary(jsonObj) {
             try {
                 // log.debug({
@@ -2216,6 +2002,12 @@ define(['N/file', 'N/https', 'N/log', 'N/ui/serverWidget', 'N/xml', 'N/record', 
                     let eventList = jsonObj2.EPCISBody.EventList;
                     if (eventList) {
                         let objectEvent = jsonObj2.EPCISBody.EventList.ObjectEvent;
+                        let packing_AggregationEvent = [];
+                        jsonObj2.EPCISBody.EventList.AggregationEvent.forEach(event => {
+                            if (event.action['#text'] === 'ADD') {
+                                packing_AggregationEvent.push(event);
+                            }
+                        })
                         if (objectEvent) {
                             for (let k in objectEvent) {
                                 let bizStep = objectEvent[k].bizStep['#text'];
@@ -2297,21 +2089,21 @@ define(['N/file', 'N/https', 'N/log', 'N/ui/serverWidget', 'N/xml', 'N/record', 
                             // Check that the senderID is not empty before going into commisioning because the bizLocation will be compared with senderID CHECK THIS INFO
                             for (let k in objectEvent) {
                                 let bizStep = objectEvent[k].bizStep['#text'];
-                                
+
                                 if (res.receiverIdOfLocation !== "") {
                                     // if (res.senderId !== "") {
                                     // res.receiverIdOfLocation
                                     if (bizStep.includes("commissioning")) {
-                                        
+
                                         // Valida que exista BizLocation
                                         if (objectEvent[k].bizLocation) {
                                             let bizLocation = objectEvent[k].bizLocation.id['#text'];
-                                            
+
                                             // With this validation we make sure that we are reading the commissioning event that has to do with the senderID
                                             // bizlocation ===res.senderID
                                             // if (bizLocation === res.receiverIdOfLocation) {
-                                                if (bizLocation === res.senderId) {
-                                                
+                                            if (bizLocation === res.senderId) {
+
                                                 // Validate that these fields cannot be empty
                                                 // Not empty: eventTime, eventTimeZoneOffset,epcList, lotNumber (extension=>ilmd=>lotNumber), itemExpirationDate
                                                 // action === ADD DONE
@@ -2454,23 +2246,29 @@ define(['N/file', 'N/https', 'N/log', 'N/ui/serverWidget', 'N/xml', 'N/record', 
                                                         } else {
                                                             epc_array.push(epc['#text']);
                                                         }
-                                                        var all_parentsID = getAllParentsID(jsonObj2.EPCISBody.EventList.AggregationEvent);
+
+                                                        var all_parentsID = getAllParentsID(packing_AggregationEvent);
                                                         // log.debug({
                                                         //     title: "All parents ID",
                                                         //     details: all_parentsID
                                                         // });
                                                         for (let o in epc_array) {
-                                                            item_isParent(epc_array[o], res.commissioning, all_parentsID, jsonObj2.EPCISBody.EventList.AggregationEvent);
+                                                            item_isParent(epc_array[o], res.commissioning, all_parentsID, packing_AggregationEvent);
+                                                            // log.debug({
+                                                            //     title: "global_obj_items_aux TI",
+                                                            //     details: global_obj_items_aux
+                                                            // });
                                                             const array_only_upper_parent = global_obj_items_aux.filter(obj => obj.hasOwnProperty('upper_parent'));
                                                             const array_without_upper_parent = global_obj_items_aux.filter(obj => !obj.hasOwnProperty('upper_parent'));
                                                             // log.debug({
-                                                            //     title: "array_only_upper_parent",
+                                                            //     title: "array_only_upper_parent TI",
                                                             //     details: array_only_upper_parent
                                                             // });
                                                             // log.debug({
-                                                            //     title: "array_without_upper_parent",
+                                                            //     title: "array_without_upper_parent TI",
                                                             //     details: array_without_upper_parent
                                                             // });
+                                                            // *************FOR PACKING HIERARCHY JOIN ALL OBJECTS ***********************
                                                             const groupedArray = {};
                                                             const all_single_items = {};
                                                             const all_single_items_aux = {};
@@ -2498,7 +2296,7 @@ define(['N/file', 'N/https', 'N/log', 'N/ui/serverWidget', 'N/xml', 'N/record', 
                                                                     }
                                                                 }
                                                                 all_single_items[upperParentId].single_items.push(...obj.upper_parent.single_items);
-                                                                groupedArray[upperParentId].upper_parent.single_items.push(...all_single_items_aux[upperParentId].single_items);
+                                                                groupedArray[upperParentId].upper_parent.single_items.push(...all_single_items[upperParentId].single_items);
                                                             });
                                                             const resultArray = Object.values(groupedArray);
                                                             // log.audit({
@@ -2507,6 +2305,8 @@ define(['N/file', 'N/https', 'N/log', 'N/ui/serverWidget', 'N/xml', 'N/record', 
                                                             // });
                                                             // mergedArray contains the structure well-formed of the cases,bundles and items without repeating ids,etc
                                                             const mergedArray = array_without_upper_parent.concat(resultArray);
+
+                                                            // ***********************For PACKING EVENT *********************************
                                                             global_obj.push({
                                                                 purchase_order: res.purchaseOrders[x],
                                                                 outermost: {
@@ -2518,6 +2318,7 @@ define(['N/file', 'N/https', 'N/log', 'N/ui/serverWidget', 'N/xml', 'N/record', 
                                                             global_obj_items = [];
                                                             global_obj_items_aux = [];
                                                             global_obj_single_items = [];
+
                                                         }
                                                     }
                                                 }
@@ -2559,19 +2360,29 @@ define(['N/file', 'N/https', 'N/log', 'N/ui/serverWidget', 'N/xml', 'N/record', 
                                             //     title: "SHIPPING EVENT EPCLIST",
                                             //     details: epc_array
                                             // });
-                                            var all_parentsID = getAllParentsID(jsonObj2.EPCISBody.EventList.AggregationEvent);
+
+                                            var all_parentsID = getAllParentsID(packing_AggregationEvent);
                                             for (let o in epc_array) {
-                                                item_isParent(epc_array[o], res.commissioning, all_parentsID, jsonObj2.EPCISBody.EventList.AggregationEvent);
+                                                item_isParent(epc_array[o], res.commissioning, all_parentsID, packing_AggregationEvent);
+
+                                                log.debug({
+                                                    title: "global_obj_items_aux TI shipping",
+                                                    details: global_obj_items_aux
+                                                });
+
                                                 const array_only_upper_parent = global_obj_items_aux.filter(obj => obj.hasOwnProperty('upper_parent'));
+
                                                 const array_without_upper_parent = global_obj_items_aux.filter(obj => !obj.hasOwnProperty('upper_parent'));
-                                                // log.debug({
-                                                //     title: "array_only_upper_parent",
-                                                //     details: array_only_upper_parent
-                                                // });
-                                                // log.debug({
-                                                //     title: "array_without_upper_parent",
-                                                //     details: array_without_upper_parent
-                                                // });
+                                                log.debug({
+                                                    title: "array_only_upper_parent TI ship",
+                                                    details: array_only_upper_parent
+                                                });
+                                                log.debug({
+                                                    title: "array_without_upper_parent TI ship",
+                                                    details: array_without_upper_parent
+                                                });
+                                                // *************FOR PACKING HIERARCHY JOIN ALL OBJECTS ***********************
+
                                                 const groupedArray = {};
                                                 const all_single_items = {};
                                                 const all_single_items_aux = {};
@@ -2598,8 +2409,16 @@ define(['N/file', 'N/https', 'N/log', 'N/ui/serverWidget', 'N/xml', 'N/record', 
                                                             single_items: []
                                                         }
                                                     }
+                                                    log.debug({
+                                                        title: "all_single_items_aux[upperParentId] TI ship",
+                                                        details: all_single_items_aux[upperParentId]
+                                                    })
                                                     all_single_items[upperParentId].single_items.push(...obj.upper_parent.single_items);
-                                                    groupedArray[upperParentId].upper_parent.single_items.push(...all_single_items_aux[upperParentId].single_items);
+                                                    log.debug({
+                                                        title: "all_single_items[upperParentId] TI ship",
+                                                        details: all_single_items[upperParentId]
+                                                    })
+                                                    groupedArray[upperParentId].upper_parent.single_items.push(...all_single_items[upperParentId].single_items);
                                                 });
                                                 const resultArray = Object.values(groupedArray);
                                                 log.audit({
@@ -2608,6 +2427,9 @@ define(['N/file', 'N/https', 'N/log', 'N/ui/serverWidget', 'N/xml', 'N/record', 
                                                 });
                                                 // mergedArray contains the structure well-formed of the cases,bundles and items without repeating ids,etc
                                                 const mergedArray = array_without_upper_parent.concat(resultArray);
+
+                                                // ***********************For PACKING EVENT *********************************
+
                                                 global_obj.push({
                                                     purchase_order: res.purchaseOrders[x],
                                                     outermost: {
@@ -2619,6 +2441,7 @@ define(['N/file', 'N/https', 'N/log', 'N/ui/serverWidget', 'N/xml', 'N/record', 
                                                 global_obj_items = [];
                                                 global_obj_items_aux = [];
                                                 global_obj_single_items = [];
+
                                             }
                                         }
                                     }
@@ -2690,10 +2513,10 @@ define(['N/file', 'N/https', 'N/log', 'N/ui/serverWidget', 'N/xml', 'N/record', 
                                             let vocabularyElement = vocabularyList_array[j][k][x].VocabularyElementList.VocabularyElement;
                                             let arrayProducts = [];
                                             for (let m in vocabularyElement) {
-                                                log.emergency({
-                                                    title: "vocabularyElement[m] EPCClass TI",
-                                                    details: vocabularyElement[m]
-                                                });
+                                                // log.emergency({
+                                                //     title: "vocabularyElement[m] EPCClass TI",
+                                                //     details: vocabularyElement[m]
+                                                // });
                                                 if (vocabularyElement[m]._attributes) {
                                                     let idVocabularyElement = vocabularyElement[m]._attributes.id;
                                                     if (res.commissioning.length > 0) {
@@ -3251,6 +3074,7 @@ define(['N/file', 'N/https', 'N/log', 'N/ui/serverWidget', 'N/xml', 'N/record', 
                 });
             }
         }
+
         function item_isParent(parent_PO_item, item_list, parent_ids, aggregationEvent) {
             try {
                 // You have the item list from the commissioning and the parentPOitem that is can either be a SGTIN or SSCC
@@ -3317,17 +3141,17 @@ define(['N/file', 'N/https', 'N/log', 'N/ui/serverWidget', 'N/xml', 'N/record', 
                             // Iterate over the array of the is_epc_parent response. Find the index of the aggregation event that has that parentID
                             // get the childEPCs and check again.
                             iterateOverAggregationEvent(is_epc_parent, parent_ids, aux_aggregationEvent, childEPCs_array);
-                            // log.debug({
-                            //     title: "global_obj_items",
-                            //     details: global_obj_items
-                            // });
+                            log.debug({
+                                title: "global_obj_items TI",
+                                details: global_obj_items
+                            });
                             // NOTE: childEPCs_array is the whole list of content within the PO
                             // Now create a new list excluding the parent_items from childEPCs_array
                             let exclude_parent_items_from_childEPCs_array = listOfExcludedParentItems(global_obj_items, childEPCs_array);
-                            // log.debug({
-                            //     title: "exclude_parent_items_from_childEPCs_array",
-                            //     details: exclude_parent_items_from_childEPCs_array
-                            // });
+                            log.debug({
+                                title: "exclude_parent_items_from_childEPCs_array",
+                                details: exclude_parent_items_from_childEPCs_array
+                            });
                             global_obj_single_items = exclude_parent_items_from_childEPCs_array;
                             // En este punto se debe de obtener una estructura asi
                             // obj.push({
@@ -3370,16 +3194,24 @@ define(['N/file', 'N/https', 'N/log', 'N/ui/serverWidget', 'N/xml', 'N/record', 
                     for (let i in obj_items) {
                         if (obj_items[i].parent_item) {
                             if (obj_items[i].parent_item) {
-                                arr_parent_items.push(obj_items[i].parent_item.id);
+                                if (!arr_parent_items.includes(obj_items[i].parent_item.id)) {
+
+                                    arr_parent_items.push(obj_items[i].parent_item.id);
+                                }
                             }
                         } else {
                             if (obj_items[i].upper_parent.id) {
                                 arr_parent_items.push(obj_items[i].upper_parent.id);
                                 if (obj_items[i].upper_parent.parent_item) {
-                                    arr_parent_items.push(obj_items[i].upper_parent.parent_item.id);
+                                    if (!arr_parent_items.includes(obj_items[i].upper_parent.parent_item.id)) {
+                                        arr_parent_items.push(obj_items[i].upper_parent.parent_item.id);
+                                    }
                                 }
                             } else {
-                                arr_parent_items.push(obj_items[i].upper_parent.parent_item.id);
+                                if (!arr_parent_items.includes(obj_items[i].upper_parent.parent_item.id)) {
+
+                                    arr_parent_items.push(obj_items[i].upper_parent.parent_item.id);
+                                }
                             }
                         }
                     }
@@ -3388,7 +3220,9 @@ define(['N/file', 'N/https', 'N/log', 'N/ui/serverWidget', 'N/xml', 'N/record', 
                         title: "isArray",
                         details: false
                     })
-                    arr_parent_items.push(obj_items);
+                    if (!arr_parent_items.includes(obj_items)) {
+                        arr_parent_items.push(obj_items);
+                    }
                 }
                 log.audit({
                     title: "arr_parents_items",
@@ -3444,10 +3278,10 @@ define(['N/file', 'N/https', 'N/log', 'N/ui/serverWidget', 'N/xml', 'N/record', 
                                     if (is_epc_parent.length === 0) {
                                         if (typeof parent_analyzed !== undefined && parent_analyzed && parent_analyzed !== "") {
                                             let remaining_nonparent_items = listOfExcludedParentItems(epc_array[j], childEPCs_array);
-                                            // log.debug({
-                                            //     title: "PARENT",
-                                            //     details: parent_analyzed.length
-                                            // });
+                                            log.debug({
+                                                title: "remaining_nonparent_items",
+                                                details: remaining_nonparent_items
+                                            });
                                             obj_to_return = {
                                                 upper_parent: {
                                                     id: parent_analyzed,
@@ -3466,7 +3300,9 @@ define(['N/file', 'N/https', 'N/log', 'N/ui/serverWidget', 'N/xml', 'N/record', 
                                                 }
                                             }
                                         }
-                                        global_obj_items_receiving.push(obj_to_return);
+                                        if (!global_obj_items_receiving.some(obj => obj.parent_item.id === obj_to_return.parent_item.id)) {
+                                            global_obj_items_receiving.push(obj_to_return);
+                                        }
                                         // log.debug({
                                         //     title: "obj_to_return",
                                         //     details: obj_to_return
@@ -3496,6 +3332,7 @@ define(['N/file', 'N/https', 'N/log', 'N/ui/serverWidget', 'N/xml', 'N/record', 
                 });
             }
         }
+
         function iterateOverAggregationEvent(epc_array, parent_ids, aggregationEvent, childEPCs_array, parent_analyzed) {
             try {
                 var obj_to_return = [];
@@ -3538,8 +3375,8 @@ define(['N/file', 'N/https', 'N/log', 'N/ui/serverWidget', 'N/xml', 'N/record', 
                                         if (typeof parent_analyzed !== undefined && parent_analyzed && parent_analyzed !== "") {
                                             let remaining_nonparent_items = listOfExcludedParentItems(epc_array[j], childEPCs_array);
                                             log.debug({
-                                                title: "PARENT",
-                                                details: parent_analyzed.length
+                                                title: "remaining_nonparent_items TI",
+                                                details: remaining_nonparent_items
                                             });
                                             obj_to_return = {
                                                 upper_parent: {
@@ -3559,7 +3396,9 @@ define(['N/file', 'N/https', 'N/log', 'N/ui/serverWidget', 'N/xml', 'N/record', 
                                                 }
                                             }
                                         }
-                                        global_obj_items.push(obj_to_return);
+                                        if (!global_obj_items.some(obj => obj.parent_item.id === obj_to_return.parent_item.id || obj.upper_parent.id === obj_to_return.upper_parent.id)) {
+                                            global_obj_items.push(obj_to_return);
+                                        }
                                         // log.debug({
                                         //     title: "obj_to_return",
                                         //     details: obj_to_return
@@ -3606,6 +3445,7 @@ define(['N/file', 'N/https', 'N/log', 'N/ui/serverWidget', 'N/xml', 'N/record', 
                 });
             }
         }
+
         function getAllParentsID(aggregationEvent) {
             try {
                 let parents_id = [];
@@ -3633,7 +3473,18 @@ define(['N/file', 'N/https', 'N/log', 'N/ui/serverWidget', 'N/xml', 'N/record', 
                 return '';
             }
         }
+        /**
+         * Defines the function that is executed when a DELETE request is sent to a RESTlet.
+         * @param {Object} requestParams - Parameters from HTTP request URL; parameters are passed as an Object (for all supported
+                                        *     content types)
+                                        * @returns {string | Object} HTTP response body; returns a string when request Content-Type is 'text/plain'; returns an
+                                        *     Object when request Content-Type is 'application/json' or 'application/xml'
+                                        * @since 2015.2
+                                        */
+        const doDelete = (requestParams) => {
 
-        return { onRequest }
+        }
+
+        return { get, put, post, delete: doDelete }
 
     });
