@@ -96,7 +96,7 @@ define(['N/log', 'N/encode', 'N/file', 'N/xml', 'N/record', 'N/search', 'N/runti
                         file_id_uploaded = fileObj.save();
                         validateXML(decoded);
                         epcis_is_correct.record_id = make_suitetrace_grouping_registry(file_id_uploaded);
-                        
+
 
                         // log.debug({
                         //     title: "file_id_uploaded",
@@ -117,20 +117,28 @@ define(['N/log', 'N/encode', 'N/file', 'N/xml', 'N/record', 'N/search', 'N/runti
 
                         // log.emergency({
                         //     title: "TRANSACTION INFORMATION OUTPUT",
-                        //     details: transactionInformationObj.transactionEvent
+                        //     details: transactionInformationObj.sender_info
+                        // });
+                        // log.emergency({
+                        //     title: "TRANSACTION INFORMATION OUTPUT",
+                        //     details: transactionInformationObj.receiver_info
                         // });
                         // log.emergency({
                         //     title: "TRANSACTION INFORMATION OUTPUT SUMMARY",
                         //     details: transactionHistoryObj
                         // });
                         // Validaciones contra NS de la info del archivo
-                        // get_items_info(get_transaction_items, get_transaction_products_information, transactionInformationObj.senderId, transactionInformationObj.receiverId, transactionInformationObj.senderIdOfLocationOrigin, transactionInformationObj.receiverIdOfLocation, transactionInformationObj.timeTransaction, false);
+                        // get_items_info(get_transaction_items, get_transaction_products_information, transactionInformationObj.senderId, transactionInformationObj.receiverId, transactionInformationObj.senderIdOfLocationOrigin, transactionInformationObj.receiverIdOfLocation, transactionInformationObj.timeTransaction, false, transactionInformationObj.receiver_info, transactionInformationObj.sender_info, transactionStatementObj);
                         // transactionHistoryObj.forEach(element => {
                         //     log.emergency({
                         //         title: "TRANSACTION HISTORY OUTPUT",
-                        //         details: element.shipment_content
+                        //         details: element.receiver_info
                         //     });
-                        //     get_items_info(element.shipment_content, element.products_information, element.senderId, element.receiverId, element.senderIdOfLocationOrigin, element.receiverIdOfLocation, element.timeTransaction, true);
+                        //     log.emergency({
+                        //         title: "TRANSACTION HISTORY OUTPUT",
+                        //         details: element.sender_info
+                        //     });
+                        //     get_items_info(element.shipment_content, element.products_information, element.senderId, element.receiverId, element.senderIdOfLocationOrigin, element.receiverIdOfLocation, element.timeTransaction, true, element.receiver_info, element.sender_info, transactionStatementObj);
                         // })
 
                     }
@@ -148,35 +156,29 @@ define(['N/log', 'N/encode', 'N/file', 'N/xml', 'N/record', 'N/search', 'N/runti
             }
 
         }
-        function make_suitetrace_grouping_registry(id_file){
-            try{
-                let obj_record=record.create({
+        function make_suitetrace_grouping_registry(id_file) {
+            try {
+                let obj_record = record.create({
                     type: CUSTOM_RECORD_ID_SUITETRACE_GRP,
                     isDynamic: true,
                 });
 
                 obj_record.setValue({
-                    fieldId:'custrecord_tkio_suitetrace_gr_file',
-                    value:id_file
+                    fieldId: 'custrecord_tkio_suitetrace_gr_file',
+                    value: id_file
                 });
-                let id_record=obj_record.save({
+                let id_record = obj_record.save({
                     enableSourcing: true,
                     ignoreMandatoryFields: true
                 });
                 return id_record;
-            
-            }catch(err){
-            log.error({title:'Error occurred in make_suitetrace_grouping_registry',details:err});
-            }
-        }
-        function get_items_info_history() {
-            try {
 
             } catch (err) {
-                log.error({ title: 'Error occurred in get_items_info_histroy', details: err });
+                log.error({ title: 'Error occurred in make_suitetrace_grouping_registry', details: err });
             }
         }
-        function get_items_info(items_hierarchy, product_information, senderId, receiverId, senderIdOfLocationOrigin, receiverIdOfLocation, timeTransaction, isTH) {
+
+        function get_items_info(items_hierarchy, product_information, senderId, receiverId, senderIdOfLocationOrigin, receiverIdOfLocation, timeTransaction, isTH, receiver_info, sender_info,transactionStatementObj) {
             try {
                 let items = [];
                 let items_levels = [];
@@ -277,7 +279,44 @@ define(['N/log', 'N/encode', 'N/file', 'N/xml', 'N/record', 'N/search', 'N/runti
                                     lot_is_suspicious: false,
                                     is_in_quarantine: false,
                                     expirationDate: element.expirationDate,
-                                    sgtin: element.sgtin
+                                    productName: element.productName,
+                                    nameManufacturerOrTrader: element.nameManufacturerOrTrader,
+                                    dosage: element.dosage,
+                                    strength: element.strength,
+                                    containerSize: element.containerSize,
+                                    sgtin: element.sgtin,
+                                    receiver_name: receiver_info.receiver.name,
+                                    receiver_addr1: receiver_info.receiver.streetAddressOne,
+                                    receiver_addr2: receiver_info.receiver.streetAddressTwo,
+                                    receiver_city: receiver_info.receiver.city,
+                                    receiver_state: receiver_info.receiver.state,
+                                    receiver_postalCode: receiver_info.receiver.postalCode,
+                                    receiver_countryCode: receiver_info.receiver.countryCode,
+                                    receiver_loc_name: receiver_info.receiverOfLocationOrigin.name,
+                                    receiver_loc_streetAddressOne: receiver_info.receiverOfLocationOrigin.streetAddressOne,
+                                    receiver_loc_streetAddressTwo: receiver_info.receiverOfLocationOrigin.streetAddressTwo,
+                                    receiver_loc_city: receiver_info.receiverOfLocationOrigin.city,
+                                    receiver_loc_state: receiver_info.receiverOfLocationOrigin.state,
+                                    receiver_loc_postalCode: receiver_info.receiverOfLocationOrigin.postalCode,
+                                    receiver_loc_countryCode: receiver_info.receiverOfLocationOrigin.countryCode,
+                                    sender_name: sender_info.sender.name,
+                                    sender_streetAddressOne: sender_info.sender.streetAddressOne,
+                                    sender_streetAddressTwo: sender_info.sender.streetAddressTwo,
+                                    sender_city: sender_info.sender.city,
+                                    sender_state: sender_info.sender.state,
+                                    sender_postalCode: sender_info.sender.postalCode,
+                                    sender_countryCode: sender_info.sender.countryCode,
+                                    sender_loc_name: sender_info.senderOfLocationOrigin.name,
+                                    sender_loc_streetAddressOne: sender_info.senderOfLocationOrigin.streetAddressOne,
+                                    sender_loc_streetAddressTwo: sender_info.senderOfLocationOrigin.streetAddressTwo,
+                                    sender_loc_city: sender_info.senderOfLocationOrigin.city,
+                                    sender_loc_postalCode: sender_info.senderOfLocationOrigin.postalCode,
+                                    sender_loc_countryCode: sender_info.senderOfLocationOrigin.countryCode,
+                                    epcis_document: file_id_uploaded,
+                                    transaction_statement: transactionStatementObj.legalNotice
+
+
+
 
                                 });
                             } else {
@@ -298,7 +337,43 @@ define(['N/log', 'N/encode', 'N/file', 'N/xml', 'N/record', 'N/search', 'N/runti
                                     lot_is_suspicious: false,
                                     is_in_quarantine: false,
                                     expirationDate: element.expirationDate,
-                                    sgtin: element.sgtin
+                                    productName: element.productName,
+                                    nameManufacturerOrTrader: element.nameManufacturerOrTrader,
+                                    dosage: element.dosage,
+                                    strength: element.strength,
+                                    containerSize: element.containerSize,
+                                    sgtin: element.sgtin,
+                                    receiver_name: receiver_info.receiver.name,
+                                    receiver_addr1: receiver_info.receiver.streetAddressOne,
+                                    receiver_addr2: receiver_info.receiver.streetAddressTwo,
+                                    receiver_city: receiver_info.receiver.city,
+                                    receiver_state: receiver_info.receiver.state,
+                                    receiver_postalCode: receiver_info.receiver.postalCode,
+                                    receiver_countryCode: receiver_info.receiver.countryCode,
+                                    receiver_loc_name: receiver_info.receiverOfLocationOrigin.name,
+                                    receiver_loc_streetAddressOne: receiver_info.receiverOfLocationOrigin.streetAddressOne,
+                                    receiver_loc_streetAddressTwo: receiver_info.receiverOfLocationOrigin.streetAddressTwo,
+                                    receiver_loc_city: receiver_info.receiverOfLocationOrigin.city,
+                                    receiver_loc_state: receiver_info.receiverOfLocationOrigin.state,
+                                    receiver_loc_postalCode: receiver_info.receiverOfLocationOrigin.postalCode,
+                                    receiver_loc_countryCode: receiver_info.receiverOfLocationOrigin.countryCode,
+                                    sender_name: sender_info.sender.name,
+                                    sender_streetAddressOne: sender_info.sender.streetAddressOne,
+                                    sender_streetAddressTwo: sender_info.sender.streetAddressTwo,
+                                    sender_city: sender_info.sender.city,
+                                    sender_state: sender_info.sender.state,
+                                    sender_postalCode: sender_info.sender.postalCode,
+                                    sender_countryCode: sender_info.sender.countryCode,
+                                    sender_loc_name: sender_info.senderOfLocationOrigin.name,
+                                    sender_loc_streetAddressOne: sender_info.senderOfLocationOrigin.streetAddressOne,
+                                    sender_loc_streetAddressTwo: sender_info.senderOfLocationOrigin.streetAddressTwo,
+                                    sender_loc_city: sender_info.senderOfLocationOrigin.city,
+                                    sender_loc_state: sender_info.senderOfLocationOrigin.state,
+                                    sender_loc_postalCode: sender_info.senderOfLocationOrigin.postalCode,
+                                    sender_loc_countryCode: sender_info.senderOfLocationOrigin.countryCode,
+                                    epcis_document: file_id_uploaded,
+
+
 
                                 });
                             }
@@ -348,13 +423,18 @@ define(['N/log', 'N/encode', 'N/file', 'N/xml', 'N/record', 'N/search', 'N/runti
                             epcis_is_correct.message = 'Purchase Order with items described in EPCIS were not found. Verify items in EPCIS';
                             epcis_is_correct.success = false;
                         }
+
                     });
 
-                    if (correct_info_count === resultArray.length) {
+                    if (correct_info_count === resultArray.length && (transactionStatementObj.affirmTransactionStatement === true || transactionStatementObj.affirmTransactionStatement === 'true') && transactionStatementObj.legalNotice !== '') {
                         // Make registry
                         obj_to_custom_record.forEach(obj => {
                             createEPCISTransaction(obj, false);
                         })
+                    } else {
+                        epcis_is_correct.record_id = '';
+                        epcis_is_correct.message = 'Transaction statement was not found, please verify.';
+                        epcis_is_correct.success = false;
                     }
                 } else {
 
@@ -474,6 +554,147 @@ define(['N/log', 'N/encode', 'N/file', 'N/xml', 'N/record', 'N/search', 'N/runti
                         fieldId: 'custrecord_tkio_sgtin',
                         value: obj.sgtin
                     });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_item_name',
+                        value: obj.productName
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_mt_name',
+                        value: obj.nameManufacturerOrTrader
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_dosage',
+                        value: obj.dosage
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_strength',
+                        value: obj.strength
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_container_sz',
+                        value: obj.containerSize
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_expiry_date',
+                        value: obj.expirationDate
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_sender_name',
+                        value: obj.sender_name
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_sender_addr1',
+                        value: obj.sender_streetAddressOne
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_sender_addr2',
+                        value: obj.sender_streetAddressTwo
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_sender_city',
+                        value: obj.sender_city
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_sender_state',
+                        value: obj.sender_state
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_sender_pc',
+                        value: obj.sender_postalCode
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tko_suitetrace_sender_cc',
+                        value: obj.sender_countryCode
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_rec_name',
+                        value: obj.receiver_name
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_rec_addr1',
+                        value: obj.receiver_addr1
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_rec_addr2',
+                        value: obj.receiver_addr2
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_rec_city',
+                        value: obj.receiver_city
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_rec_state',
+                        value: obj.receiver_state
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_rec_cc',
+                        value: obj.receiver_countryCode
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_sen_loc_name',
+                        value: obj.sender_loc_name
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_sen_loc_addr1',
+                        value: obj.sender_loc_streetAddressOne
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_sen_loc_addr2',
+                        value: obj.sender_loc_streetAddressTwo
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_sen_loc_city',
+                        value: obj.sender_loc_city
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_sen_loc_state',
+                        value: obj.sender_loc_state
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_sen_loc_pc',
+                        value: obj.sender_loc_postalCode
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_sen_loc_cc',
+                        value: obj.sender_loc_countryCode
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_rec_loc_name',
+                        value: obj.receiver_loc_name
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_rec_loc_addr1',
+                        value: obj.receiver_loc_streetAddressOne
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_rec_loc_addr2',
+                        value: obj.receiver_loc_streetAddressTwo
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_rec_loc_city',
+                        value: obj.receiver_loc_city
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_rec_loc_state',
+                        value: obj.receiver_loc_state
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_rec_loc_pc',
+                        value: obj.receiver_loc_postalCode
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_rec_loc_cc',
+                        value: obj.receiver_loc_countryCode
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_epcis_file',
+                        value: obj.epcis_document
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_ts',
+                        value: obj.transaction_statement
+                    });
+
 
                     id_record_transactionInformation = objRecord.save();
                 } else {
@@ -543,6 +764,142 @@ define(['N/log', 'N/encode', 'N/file', 'N/xml', 'N/record', 'N/search', 'N/runti
                     objRecord.setValue({
                         fieldId: 'custrecord_wetrack_ti_id_related',
                         value: id_record_transactionInformation
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_item_name',
+                        value: obj.productName
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_mt_name',
+                        value: obj.nameManufacturerOrTrader
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_dosage',
+                        value: obj.dosage
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_strength',
+                        value: obj.strength
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_container_sz',
+                        value: obj.containerSize
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_expiry_date',
+                        value: obj.expirationDate
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_sender_name',
+                        value: obj.sender_name
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_sender_addr1',
+                        value: obj.sender_streetAddressOne
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_sender_addr2',
+                        value: obj.sender_streetAddressTwo
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_sender_city',
+                        value: obj.sender_city
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_sender_state',
+                        value: obj.sender_state
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_sender_pc',
+                        value: obj.sender_postalCode
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tko_suitetrace_sender_cc',
+                        value: obj.sender_countryCode
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_rec_name',
+                        value: obj.receiver_name
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_rec_addr1',
+                        value: obj.receiver_addr1
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_rec_addr2',
+                        value: obj.receiver_addr2
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_rec_city',
+                        value: obj.receiver_city
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_rec_state',
+                        value: obj.receiver_state
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_rec_cc',
+                        value: obj.receiver_countryCode
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_sen_loc_name',
+                        value: obj.sender_loc_name
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_sen_loc_addr1',
+                        value: obj.sender_loc_streetAddressOne
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_sen_loc_addr2',
+                        value: obj.sender_loc_streetAddressTwo
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_sen_loc_city',
+                        value: obj.sender_loc_city
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_sen_loc_state',
+                        value: obj.sender_loc_state
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_sen_loc_pc',
+                        value: obj.sender_loc_postalCode
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_sen_loc_cc',
+                        value: obj.sender_loc_countryCode
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_rec_loc_name',
+                        value: obj.receiver_loc_name
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_rec_loc_addr1',
+                        value: obj.receiver_loc_streetAddressOne
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_rec_loc_addr2',
+                        value: obj.receiver_loc_streetAddressTwo
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_rec_loc_city',
+                        value: obj.receiver_loc_city
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_rec_loc_state',
+                        value: obj.receiver_loc_state
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_rec_loc_pc',
+                        value: obj.receiver_loc_postalCode
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_rec_loc_cc',
+                        value: obj.receiver_loc_countryCode
+                    });
+                    objRecord.setValue({
+                        fieldId: 'custrecord_tkio_suitetrace_epcis_file',
+                        value: obj.epcis_document
                     });
                     objRecord.save();
 

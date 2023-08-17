@@ -1,0 +1,24 @@
+<customlist scriptid="customlist_suitetrace_process_status">
+  <description></description>
+  <isinactive>F</isinactive>
+  <isordered>T</isordered>
+  <name>SuiteTrace Process Status List</name>
+  <customvalues>
+    <customvalue scriptid="val_2985095_7076975_sb1_214">
+      <isinactive>F</isinactive>
+      <value>Pending Process</value>
+    </customvalue>
+    <customvalue scriptid="val_2985096_7076975_sb1_505">
+      <isinactive>F</isinactive>
+      <value>Processing</value>
+    </customvalue>
+    <customvalue scriptid="val_2985097_7076975_sb1_839">
+      <isinactive>F</isinactive>
+      <value>Processed</value>
+    </customvalue>
+    <customvalue scriptid="val_2985098_7076975_sb1_751">
+      <isinactive>F</isinactive>
+      <value>Error</value>
+    </customvalue>
+  </customvalues>
+</customlist>

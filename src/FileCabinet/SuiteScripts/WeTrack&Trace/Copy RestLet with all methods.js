@@ -1,10 +1,19 @@
 /**
  * @NApiVersion 2.1
- * @NScriptType MapReduceScript
+ * @NScriptType Restlet
  */
 define(['N/log', 'N/encode', 'N/file', 'N/xml', 'N/record', 'N/search', 'N/runtime'],
-    
+
     (log, encode, file, xml, record, search, runtime) => {
+        /**
+         * Defines the function that is executed when a GET request is sent to a RESTlet.
+         * @param {Object} requestParams - Parameters from HTTP request URL; parameters passed as an Object (for all supported
+         *     content types)
+         * @returns {string | Object} HTTP response body; returns a string when request Content-Type is 'text/plain'; returns an
+         *     Object when request Content-Type is 'application/json' or 'application/xml'
+         * @since 2015.2
+         */
+        // Transaction Information Variables por Packing Hierarchies
         var global_obj_items = [];
         var global_obj_items_aux = [];
         var global_obj_single_items = [];
@@ -19,255 +28,157 @@ define(['N/log', 'N/encode', 'N/file', 'N/xml', 'N/record', 'N/search', 'N/runti
 
         var file_id_uploaded = null;
         var id_record_transactionInformation = '';
-        
-        const CUSTOM_RECORD_ID_SUITETRACE_GRP = 'customrecord_tkio_suitetrace_grouping';
-        const CUSTOM_RECORD_ID_EPCIS = 'customrecord_tkio_wetrack_xml';
-        const CUSTOM_RECORD_EPCIS_TRANSACTION = 'customrecord_tkio_wetrack_epcis_transact';
-        const CUSTOM_RECORD_ID = 'customrecord_wetrack_transaction';
-        const CUSTOM_SHIPMENT_CONTENT_RECORD_ID = 'customrecord_tkio_wetrack_shipment_cntnt';
-        /**
-         * Defines the function that is executed at the beginning of the map/reduce process and generates the input data.
-         * @param {Object} inputContext
-         * @param {boolean} inputContext.isRestarted - Indicates whether the current invocation of this function is the first
-         *     invocation (if true, the current invocation is not the first invocation and this function has been restarted)
-         * @param {Object} inputContext.ObjectRef - Object that references the input data
-         * @typedef {Object} ObjectRef
-         * @property {string|number} ObjectRef.id - Internal ID of the record instance that contains the input data
-         * @property {string} ObjectRef.type - Type of the record instance that contains the input data
-         * @returns {Array|Object|Search|ObjectRef|File|Query} The input data to use in the map/reduce process
-         * @since 2015.2
-         */
+        var epcis_is_correct = {
+            record_id: '',
+            success: false,
+            message: ''
+        }
+        var CUSTOM_RECORD_ID_SUITETRACE_GRP = 'customrecord_tkio_suitetrace_grouping';
+        var CUSTOM_RECORD_ID_EPCIS = 'customrecord_tkio_wetrack_xml';
+        var CUSTOM_RECORD_EPCIS_TRANSACTION = 'customrecord_tkio_wetrack_epcis_transact';
+        var CUSTOM_RECORD_ID = 'customrecord_wetrack_transaction';
+        var CUSTOM_SHIPMENT_CONTENT_RECORD_ID = 'customrecord_tkio_wetrack_shipment_cntnt';
+        const get = (requestParams) => {
 
-        const getInputData = (inputContext) => {
-            try {
-                var records_to_process = search.create({
-                    type: CUSTOM_RECORD_ID_SUITETRACE_GRP,
-                    filters:
-                    [
-                       ["isinactive",search.Operator.IS,"F"], 
-                       "AND", 
-                       ["custrecord_tkio_suitetrace_proc_status",search.Operator.ANYOF,"1"],
-                       "AND", 
-                        ["internalid",search.Operator.ANYOF,"202"]
-                    ],
-                    columns:
-                    [
-                       search.createColumn({
-                          name: "internalid",
-                          sort: search.Sort.ASC,
-                          label: "Internal ID"
-                       }),
-                       search.createColumn({name: "custrecord_tkio_suitetrace_gr_file", label: "File"}),
-                       search.createColumn({name: "custrecord_tkio_suitetrace_proc_status", label: "Process Status"})
-                    ]
-                });
-                var recordsResults = records_to_process.runPaged({
-                    pageSize: 1000
-                });
-                log.debug("Records result to process: ", recordsResults.count);
-                if (recordsResults.count > 0) {
-                    return records_to_process;
-                }
-            } catch (error) {
-                log.error({ title:'getInputData', details:error });
-            }
         }
 
         /**
-         * Defines the function that is executed when the map entry point is triggered. This entry point is triggered automatically
-         * when the associated getInputData stage is complete. This function is applied to each key-value pair in the provided
-         * context.
-         * @param {Object} mapContext - Data collection containing the key-value pairs to process in the map stage. This parameter
-         *     is provided automatically based on the results of the getInputData stage.
-         * @param {Iterator} mapContext.errors - Serialized errors that were thrown during previous attempts to execute the map
-         *     function on the current key-value pair
-         * @param {number} mapContext.executionNo - Number of times the map function has been executed on the current key-value
-         *     pair
-         * @param {boolean} mapContext.isRestarted - Indicates whether the current invocation of this function is the first
-         *     invocation (if true, the current invocation is not the first invocation and this function has been restarted)
-         * @param {string} mapContext.key - Key to be processed during the map stage
-         * @param {string} mapContext.value - Value to be processed during the map stage
+         * Defines the function that is executed when a PUT request is sent to a RESTlet.
+         * @param {string | Object} requestBody - The HTTP request body; request body are passed as a string when request
+         *     Content-Type is 'text/plain' or parsed into an Object when request Content-Type is 'application/json' (in which case
+         *     the body must be a valid JSON)
+         * @returns {string | Object} HTTP response body; returns a string when request Content-Type is 'text/plain'; returns an
+         *     Object when request Content-Type is 'application/json' or 'application/xml'
          * @since 2015.2
          */
+        const put = (requestBody) => {
 
-        const map = (mapContext) => {
-            try {
-                const { value } = mapContext
-                let values = JSON.parse(value);
-                let key = values.values.internalid.value;
-                // log.debug({ title:'MAP data', details:{key: key, value: value} });
-                mapContext.write({ key: key, value: value })
-            } catch (error) {
-                log.error({ title:'map', details:error });
-            }
         }
 
         /**
-         * Defines the function that is executed when the reduce entry point is triggered. This entry point is triggered
-         * automatically when the associated map stage is complete. This function is applied to each group in the provided context.
-         * @param {Object} reduceContext - Data collection containing the groups to process in the reduce stage. This parameter is
-         *     provided automatically based on the results of the map stage.
-         * @param {Iterator} reduceContext.errors - Serialized errors that were thrown during previous attempts to execute the
-         *     reduce function on the current group
-         * @param {number} reduceContext.executionNo - Number of times the reduce function has been executed on the current group
-         * @param {boolean} reduceContext.isRestarted - Indicates whether the current invocation of this function is the first
-         *     invocation (if true, the current invocation is not the first invocation and this function has been restarted)
-         * @param {string} reduceContext.key - Key to be processed during the reduce stage
-         * @param {List<String>} reduceContext.values - All values associated with a unique key that was passed to the reduce stage
-         *     for processing
+         * Defines the function that is executed when a POST request is sent to a RESTlet.
+         * @param {string | Object} requestBody - The HTTP request body; request body is passed as a string when request
+         *     Content-Type is 'text/plain' or parsed into an Object when request Content-Type is 'application/json' (in which case
+         *     the body must be a valid JSON)
+         * @returns {string | Object} HTTP response body; returns a string when request Content-Type is 'text/plain'; returns an
+         *     Object when request Content-Type is 'application/json' or 'application/xml'
          * @since 2015.2
          */
-        const reduce = (reduceContext) => {
-            const { key } = reduceContext;
-            var epcis_is_correct = {
-                record_id: key,
-                success: true,
-                message: ''
-            }
+        const post = (requestBody) => {
             try {
-                const values = JSON.parse(reduceContext.values);
-                const id_file = values.values.custrecord_tkio_suitetrace_gr_file.value;
-                const id_grouping = values.id;
-                log.debug({ title:'reduce_key: ' + key, details:{id_file: id_file, values: values} });
-                const file_load = file.load({
-                    id: id_file
-                });
-                const file_content = file_load.getContents();
-                let validaXML_response = validateXML(file_content);
-                if (validaXML_response.success == false) {
-                    throw validaXML_response.message;
-                }
+                var scriptObj = runtime.getCurrentScript();
+                var folderID = scriptObj.getParameter({ name: 'custscript_tkio_wetrack_epcis_folder_id' });
+                if (folderID !== '') {
 
-                // 2. Convierte de XML a JSON para inicar recorrido de validaciones de contenido
-                var obj_xml = getXMLJSON(file_content);
-                log.debug({ title:'obj_xml', details:obj_xml });
-                // 3. Realiza validaciones y mapeo de datos de contenido según DSCSA
-                var transactionInformationObj = getTransactionInformationSummary(JSON.stringify(obj_xml));
-                var transactionHistoryObj = getTransactionHistoryReloaded(JSON.stringify(obj_xml));
-                var transactionStatementObj = getTransactionStatement(JSON.stringify(obj_xml));
-                var get_transaction_items = transactionInformationObj.transactionEvent;
-                var get_transaction_products_information = transactionInformationObj.products_information;
+                    let gln = requestBody.gln;
+                    if (!gln) {
+                        epcis_is_correct.success = false;
+                        epcis_is_correct.message = "Missing 'gln' in JSON";
+                        epcis_is_correct.record_id = '';
+                    } else {
+                        let decoded = encode.convert({
+                            string: requestBody.file_content,
+                            inputEncoding: encode.Encoding.BASE_64,
+                            outputEncoding: encode.Encoding.UTF_8
+                        });
+
+                        // log.debug({
+                        //     title: "Decoded content",
+                        //     details: decoded
+                        // });
+                        let date = Date.now();
+                        var fileObj = file.create({
+                            name: 'EPCIS-' + gln + " - " + date + '.xml',
+                            fileType: file.Type.XMLDOC,
+                            contents: decoded
+                        });
+                        fileObj.folder = folderID;
+                        file_id_uploaded = fileObj.save();
+                        validateXML(decoded);
+                        epcis_is_correct.record_id = make_suitetrace_grouping_registry(file_id_uploaded);
+
+
+                        // log.debug({
+                        //     title: "file_id_uploaded",
+                        //     details: file_id_uploaded
+                        // });
+
+                        // 2. Convierte de XML a JSON para inicar recorrido de validaciones de contenido
+                        var obj_xml = getXMLJSON(decoded);
+
+                        // 3. Realiza validaciones y mapeo de datos de contenido según DSCSA
+                        var transactionInformationObj = getTransactionInformationSummary(JSON.stringify(obj_xml));
+                        var transactionHistoryObj = getTransactionHistoryReloaded(JSON.stringify(obj_xml));
+                        var transactionStatementObj = getTransactionStatement(JSON.stringify(obj_xml));
+                        var get_transaction_items = transactionInformationObj.transactionEvent;
+                        var get_transaction_products_information = transactionInformationObj.products_information;
 
 
 
-                log.emergency({
-                    title: "TRANSACTION INFORMATION OUTPUT",
-                    details: transactionInformationObj.transactionEvent
-                });
-                log.emergency({
-                    title: "TRANSACTION INFORMATION OUTPUT SUMMARY",
-                    details: transactionHistoryObj
-                });
+                        log.emergency({
+                            title: "TRANSACTION INFORMATION OUTPUT",
+                            details: transactionInformationObj.sender_info
+                        });
+                        log.emergency({
+                            title: "TRANSACTION INFORMATION OUTPUT",
+                            details: transactionInformationObj.receiver_info
+                        });
+                        // log.emergency({
+                        //     title: "TRANSACTION INFORMATION OUTPUT SUMMARY",
+                        //     details: transactionHistoryObj
+                        // });
+                        // Validaciones contra NS de la info del archivo
+                        get_items_info(get_transaction_items, get_transaction_products_information, transactionInformationObj.senderId, transactionInformationObj.receiverId, transactionInformationObj.senderIdOfLocationOrigin, transactionInformationObj.receiverIdOfLocation, transactionInformationObj.timeTransaction, false, transactionInformationObj.receiver_info, transactionInformationObj.sender_info, transactionStatementObj);
+                        transactionHistoryObj.forEach(element => {
+                            log.emergency({
+                                title: "TRANSACTION HISTORY OUTPUT",
+                                details: element.receiver_info
+                            });
+                            log.emergency({
+                                title: "TRANSACTION HISTORY OUTPUT",
+                                details: element.sender_info
+                            });
+                            get_items_info(element.shipment_content, element.products_information, element.senderId, element.receiverId, element.senderIdOfLocationOrigin, element.receiverIdOfLocation, element.timeTransaction, true, element.receiver_info, element.sender_info, transactionStatementObj);
+                        })
 
-                // Validaciones contra NS de la info del archivo
-                let get_items_info_result = get_items_info(get_transaction_items, get_transaction_products_information, transactionInformationObj.senderId, transactionInformationObj.receiverId, transactionInformationObj.senderIdOfLocationOrigin, transactionInformationObj.receiverIdOfLocation, transactionInformationObj.timeTransaction, false, transactionInformationObj.receiver_info, transactionInformationObj.sender_info, transactionStatementObj, id_grouping, id_file);
-                if (get_items_info_result.success == false) {
-                    throw get_items_info_result.message
-                }
-                transactionHistoryObj.forEach(element => {
-                    log.emergency({
-                        title: "TRANSACTION HISTORY OUTPUT",
-                        details: element.shipment_content
-                    });
-                    let get_items_info_result2 = get_items_info(element.shipment_content, element.products_information, element.senderId, element.receiverId, element.senderIdOfLocationOrigin, element.receiverIdOfLocation, element.timeTransaction, true, element.receiver_info, element.sender_info, transactionStatementObj, id_grouping, id_file);
-                    if (get_items_info_result2.success == false) {
-                        throw get_items_info_result2.message;
                     }
-                })
-            } catch (error) {
-                log.error({ title:'reduce', details:error });
-                epcis_is_correct.success = false;
-                epcis_is_correct.message = error;
+
+                } else {
+                    epcis_is_correct.success = false;
+                    epcis_is_correct.record_id = '';
+                    epcis_is_correct.message = 'Folder ID not set, please contact support.'
+                }
+
+                return JSON.stringify(epcis_is_correct)
+
+            } catch (err) {
+                log.error({ title: 'Error occurred in post', details: err });
             }
-            log.debug({ title:'REDUCE: epics_is_correct', details:epcis_is_correct });
-            reduceContext.write({
-                key: key,
-                value: epcis_is_correct
-            })
+
         }
-
-
-        /**
-         * Defines the function that is executed when the summarize entry point is triggered. This entry point is triggered
-         * automatically when the associated reduce stage is complete. This function is applied to the entire result set.
-         * @param {Object} summaryContext - Statistics about the execution of a map/reduce script
-         * @param {number} summaryContext.concurrency - Maximum concurrency number when executing parallel tasks for the map/reduce
-         *     script
-         * @param {Date} summaryContext.dateCreated - The date and time when the map/reduce script began running
-         * @param {boolean} summaryContext.isRestarted - Indicates whether the current invocation of this function is the first
-         *     invocation (if true, the current invocation is not the first invocation and this function has been restarted)
-         * @param {Iterator} summaryContext.output - Serialized keys and values that were saved as output during the reduce stage
-         * @param {number} summaryContext.seconds - Total seconds elapsed when running the map/reduce script
-         * @param {number} summaryContext.usage - Total number of governance usage units consumed when running the map/reduce
-         *     script
-         * @param {number} summaryContext.yields - Total number of yields when running the map/reduce script
-         * @param {Object} summaryContext.inputSummary - Statistics about the input stage
-         * @param {Object} summaryContext.mapSummary - Statistics about the map stage
-         * @param {Object} summaryContext.reduceSummary - Statistics about the reduce stage
-         * @since 2015.2
-         */
-        const summarize = (summaryContext) => {
+        function make_suitetrace_grouping_registry(id_file) {
             try {
-                log.audit('Status process', 'Process Complete')
-                const { output } = summaryContext
-                let counterCreated = 0
-                const counterUpdated = 0
-                let counterFails = 0
-                output.iterator().each((key, value) => {
-                    log.debug({ title:'otput key: ' + key, details:value });
-                    // const line = JSON.parse(value)
-                    // if (line.success) {
-                    //     if (line.type === 'created') {
-                    //         counterCreated++
-                    //         //   } else if (line.type === 'updated') {
-                    //         // counterUpdated++
-                    //     }
-                    // } else {
-                    //     counterFails++
-                    // }
-                    return true
-                })
-                // log.audit(
-                //     'Results',
-                //     `Adjustment resume, creates: ${counterCreated}, updates: ${counterUpdated}, fails: ${counterFails}`
-                // );
-            } catch (error) {
-                log.error({ title:'summarize', details:error });
-            }
-        }
-
-        function make_suitetrace_grouping_registry(id_file){
-            try{
-                let obj_record=record.create({
+                let obj_record = record.create({
                     type: CUSTOM_RECORD_ID_SUITETRACE_GRP,
                     isDynamic: true,
                 });
 
                 obj_record.setValue({
-                    fieldId:'custrecord_tkio_suitetrace_gr_file',
-                    value:id_file
+                    fieldId: 'custrecord_tkio_suitetrace_gr_file',
+                    value: id_file
                 });
-                let id_record=obj_record.save({
+                let id_record = obj_record.save({
                     enableSourcing: true,
                     ignoreMandatoryFields: true
                 });
                 return id_record;
-            
-            }catch(err){
-            log.error({title:'Error occurred in make_suitetrace_grouping_registry',details:err});
-            }
-        }
-
-        function get_items_info_history() {
-            try {
 
             } catch (err) {
-                log.error({ title: 'Error occurred in get_items_info_histroy', details: err });
+                log.error({ title: 'Error occurred in make_suitetrace_grouping_registry', details: err });
             }
         }
 
-        function get_items_info(items_hierarchy, product_information, senderId, receiverId, senderIdOfLocationOrigin, receiverIdOfLocation, timeTransaction, isTH, receiver_info, sender_info,transactionStatementObj, id_grouping, id_file) {
-            const response = {success: true, message: ''}
+        function get_items_info(items_hierarchy, product_information, senderId, receiverId, senderIdOfLocationOrigin, receiverIdOfLocation, timeTransaction, isTH, receiver_info, sender_info,transactionStatementObj) {
             try {
                 let items = [];
                 let items_levels = [];
@@ -399,10 +310,9 @@ define(['N/log', 'N/encode', 'N/file', 'N/xml', 'N/record', 'N/search', 'N/runti
                                     sender_loc_streetAddressOne: sender_info.senderOfLocationOrigin.streetAddressOne,
                                     sender_loc_streetAddressTwo: sender_info.senderOfLocationOrigin.streetAddressTwo,
                                     sender_loc_city: sender_info.senderOfLocationOrigin.city,
-                                    sender_loc_state: sender_info.senderOfLocationOrigin.state,
                                     sender_loc_postalCode: sender_info.senderOfLocationOrigin.postalCode,
                                     sender_loc_countryCode: sender_info.senderOfLocationOrigin.countryCode,
-                                    epcis_document: id_file,
+                                    epcis_document: file_id_uploaded,
                                     transaction_statement: transactionStatementObj.legalNotice
 
 
@@ -461,7 +371,7 @@ define(['N/log', 'N/encode', 'N/file', 'N/xml', 'N/record', 'N/search', 'N/runti
                                     sender_loc_state: sender_info.senderOfLocationOrigin.state,
                                     sender_loc_postalCode: sender_info.senderOfLocationOrigin.postalCode,
                                     sender_loc_countryCode: sender_info.senderOfLocationOrigin.countryCode,
-                                    epcis_document: id_file,
+                                    epcis_document: file_id_uploaded,
 
 
 
@@ -509,8 +419,9 @@ define(['N/log', 'N/encode', 'N/file', 'N/xml', 'N/record', 'N/search', 'N/runti
                             });
                             correct_info_count++;
                         } else {
-                            response.message = 'Purchase Order with items described in EPCIS were not found. Verify items in EPCIS';
-                            response.success = false;
+                            epcis_is_correct.record_id = '';
+                            epcis_is_correct.message = 'Purchase Order with items described in EPCIS were not found. Verify items in EPCIS';
+                            epcis_is_correct.success = false;
                         }
 
                     });
@@ -518,16 +429,17 @@ define(['N/log', 'N/encode', 'N/file', 'N/xml', 'N/record', 'N/search', 'N/runti
                     if (correct_info_count === resultArray.length && (transactionStatementObj.affirmTransactionStatement === true || transactionStatementObj.affirmTransactionStatement === 'true') && transactionStatementObj.legalNotice !== '') {
                         // Make registry
                         obj_to_custom_record.forEach(obj => {
-                            createEPCISTransaction(obj, false, id_grouping);
+                            createEPCISTransaction(obj, false);
                         })
                     } else {
-                        response.message = 'Transaction statement was not found, please verify.';
-                        response.success = false;
+                        epcis_is_correct.record_id = '';
+                        epcis_is_correct.message = 'Transaction statement was not found, please verify.';
+                        epcis_is_correct.success = false;
                     }
                 } else {
 
                     obj_to_custom_record.forEach(obj => {
-                        createEPCISTransaction(obj, true, id_grouping);
+                        createEPCISTransaction(obj, true);
                     })
                 }
 
@@ -560,13 +472,9 @@ define(['N/log', 'N/encode', 'N/file', 'N/xml', 'N/record', 'N/search', 'N/runti
 
             } catch (err) {
                 log.error({ title: 'Error occurred in get_items_info', details: err });
-                response.success = false;
-                response.message = err;
             }
-            return response;
         }
-
-        function createEPCISTransaction(obj, isTH, id_grouping) {
+        function createEPCISTransaction(obj, isTH) {
             try {
                 log.emergency({
                     title: "obj from createEPCISTransaction",
@@ -575,10 +483,6 @@ define(['N/log', 'N/encode', 'N/file', 'N/xml', 'N/record', 'N/search', 'N/runti
                 let objRecord = record.create({
                     type: CUSTOM_RECORD_EPCIS_TRANSACTION,
                     isDynamic: false,
-                });
-                objRecord.setValue({
-                    fieldId: 'custrecord_tkio_suitetrace_grouping',
-                    value: id_grouping
                 });
                 if (!isTH) {
 
@@ -1008,7 +912,6 @@ define(['N/log', 'N/encode', 'N/file', 'N/xml', 'N/record', 'N/search', 'N/runti
             }
 
         }
-
         function retrieve_compare_NDC_withTH_item(item_ndc, obj_to_custom_record) {
             try {
                 const itemSearchColName = search.createColumn({ name: 'itemid', sort: search.Sort.ASC });
@@ -1047,7 +950,6 @@ define(['N/log', 'N/encode', 'N/file', 'N/xml', 'N/record', 'N/search', 'N/runti
                 log.error({ title: 'Error occurred in retrueve_compare_NDCwithTH_item', details: err });
             }
         }
-
         function compareContentWithPurchaseOrder(po, lot, item_ndc, quantity_received, obj_to_custom_record) {
             try {
                 let search_res = false;
@@ -1121,12 +1023,7 @@ define(['N/log', 'N/encode', 'N/file', 'N/xml', 'N/record', 'N/search', 'N/runti
                 log.error({ title: 'Error occurred in compareContentWithPurchaseOrder', details: err });
             }
         }
-
         function validateXML(xml_body) {
-            const response = {
-                success: false,
-                message: ''
-            }
             try {
                 var xmlDocument = xml.Parser.fromString({
                     text: xml_body
@@ -1136,16 +1033,20 @@ define(['N/log', 'N/encode', 'N/file', 'N/xml', 'N/record', 'N/search', 'N/runti
                     xsdFilePathOrId: 'SuiteBundles/Bundle 492865/EpcisFiles/epcisSchema.xsd',
                     importFolderPathOrId: 'SuiteBundles/Bundle 492865/EpcisFiles'
                 });
-                response.message = 'Valid XML';
-                response.success = true;
+                epcis_is_correct.message = 'Valid XML';
+                epcis_is_correct.success = true;
+                return true;
             } catch (err) {
-                response.message = err;
-                response.success = false;
-                log.error({ title: "Error ocurred in ValidateXML", details: err });
+                epcis_is_correct.record_id = '';
+                epcis_is_correct.message = err;
+                epcis_is_correct.success = false;
+                log.error({
+                    title: "Error ocurred in ValidateXML",
+                    details: err
+                });
+                return false;
             }
-            return response;
         }
-
         function make_registry(purchase_orders, file_id) {
             try {
                 let objRecord = record.create({
@@ -1179,7 +1080,6 @@ define(['N/log', 'N/encode', 'N/file', 'N/xml', 'N/record', 'N/search', 'N/runti
                 log.error({ title: 'Error occurred in make_registry', details: err });
             }
         }
-
         function getXMLJSON(xmlBody) {
             var xmlObj = xml.Parser.fromString({
                 text: xmlBody
@@ -1187,7 +1087,6 @@ define(['N/log', 'N/encode', 'N/file', 'N/xml', 'N/record', 'N/search', 'N/runti
             var jsonObj = xmlToJson(xmlObj.documentElement);
             return jsonObj;
         }
-
         function xmlToJson(xmlNode) {
             // Create the return object
             var obj = Object.create(null);
@@ -1224,8 +1123,7 @@ define(['N/log', 'N/encode', 'N/file', 'N/xml', 'N/record', 'N/search', 'N/runti
                 }
             }
             return obj;
-        }
-
+        };
         function getTransactionStatement(jsonObj) {
             let res = {
                 affirmTransactionStatement: '',
@@ -1250,19 +1148,23 @@ define(['N/log', 'N/encode', 'N/file', 'N/xml', 'N/record', 'N/search', 'N/runti
                         res.affirmTransactionStatement = jsonObj2.EPCISHeader[j]['gs1ushc:affirmTransactionStatement']['#text'];
                         res.legalNotice = jsonObj2.EPCISHeader[j]['gs1ushc:legalNotice']['#text'];
 
-                        
+                        // if (jsonObj2.EPCISHeader[j]['gs1ushc:dscsaTransactionStatement']['gs1ushc:affirmTransactionStatement']) {
+                        //     res.affirmTransactionStatement = jsonObj2.EPCISHeader[j]['gs1ushc:dscsaTransactionStatement']['gs1ushc:affirmTransactionStatement']['#text']
+                        // }
+                        // if (jsonObj2.EPCISHeader[j]['gs1ushc:dscsaTransactionStatement']['gs1ushc:legalNotice']) {
+                        //     res.legalNotice = jsonObj2.EPCISHeader[j]['gs1ushc:dscsaTransactionStatement']['gs1ushc:legalNotice']['#text'];
+                        // }
                         return res;
                     }
                 }
             } catch (err) {
-                
+                ;
                 log.error({
                     title: "Error occurred in getTransactionStatement",
                     details: err
                 })
             }
         }
-
         function getTransactionHistoryReloaded(jsonObj) {
             try {
                 res_to_return = [];
@@ -2400,7 +2302,6 @@ define(['N/log', 'N/encode', 'N/file', 'N/xml', 'N/record', 'N/search', 'N/runti
                 log.error({ title: 'Error occurred in getTransactionHistoryReloaded', details: err });
             }
         }
-
         function getTransactionInformationSummary(jsonObj) {
             try {
                 // log.debug({
@@ -3398,7 +3299,6 @@ define(['N/log', 'N/encode', 'N/file', 'N/xml', 'N/record', 'N/search', 'N/runti
                 });
             }
         }
-
         function setExpiryAndLotNumber(sgtin, array_info) {
             try {
                 let response = {
@@ -3427,7 +3327,6 @@ define(['N/log', 'N/encode', 'N/file', 'N/xml', 'N/record', 'N/search', 'N/runti
                 return {};
             }
         }
-
         function item_isParent_receiving(parent_PO_item, item_list, parent_ids, aggregationEvent) {
             try {
                 // You have the item list from the commissioning and the parentPOitem that is can either be a SGTIN or SSCC
@@ -3633,7 +3532,6 @@ define(['N/log', 'N/encode', 'N/file', 'N/xml', 'N/record', 'N/search', 'N/runti
                 });
             }
         }
-
         function listOfExcludedParentItems(obj_items, childEPCs_array) {
             log.audit({
                 title: "obj_items",
@@ -3696,7 +3594,6 @@ define(['N/log', 'N/encode', 'N/file', 'N/xml', 'N/record', 'N/search', 'N/runti
                 })
             }
         }
-
         function iterateOverAggregationEvent_receiving(epc_array, parent_ids, aggregationEvent, childEPCs_array, parent_analyzed) {
             try {
                 var obj_to_return = [];
@@ -3884,7 +3781,6 @@ define(['N/log', 'N/encode', 'N/file', 'N/xml', 'N/record', 'N/search', 'N/runti
                 });
             }
         }
-
         function isParent(childEPCs_array, parent_ids) {
             try {
                 let array_epc_parent = [];
@@ -3934,7 +3830,18 @@ define(['N/log', 'N/encode', 'N/file', 'N/xml', 'N/record', 'N/search', 'N/runti
                 return '';
             }
         }
+        /**
+         * Defines the function that is executed when a DELETE request is sent to a RESTlet.
+         * @param {Object} requestParams - Parameters from HTTP request URL; parameters are passed as an Object (for all supported
+                                        *     content types)
+                                        * @returns {string | Object} HTTP response body; returns a string when request Content-Type is 'text/plain'; returns an
+                                        *     Object when request Content-Type is 'application/json' or 'application/xml'
+                                        * @since 2015.2
+                                        */
+        const doDelete = (requestParams) => {
 
-        return {getInputData, map, reduce, summarize}
+        }
+
+        return { get, put, post, delete: doDelete }
 
     });
