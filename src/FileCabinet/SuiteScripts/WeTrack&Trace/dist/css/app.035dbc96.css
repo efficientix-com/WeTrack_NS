@@ -1,3 +1,5 @@
+@import url(https://fonts.googleapis.com/css2?family=Roboto&display=swap);
+
 .subMenuOpen[data-v-6d27046e],
 a[data-v-6d27046e] {
     text-decoration: none !important;
@@ -70,7 +72,8 @@ body,
 html {
     height: 100%;
     width: 100%;
-    margin: 0 !important
+    margin: 0 !important;
+    font-family: Roboto, sans-serif
 }
 
 #app {
@@ -92,165 +95,9 @@ html {
     display: none
 }
 
-.menu {
-    background-color: #1d2228;
-    color: #f2f2f2;
-    transition: width .3s;
-    font-family: Arial, Helvetica, sans-serif;
-    position: absolute;
-    height: 100%;
-    bottom: 0
-}
-
-.subMenuOpen:hover {
-    border-color: #fff;
-    background-color: #3b3b3b
-}
-
-.subMenuOpen:hover .menuItemHeader {
-    background-color: #1d2228;
-    margin-left: 0
-}
-
-.header {
-    display: flex;
-    justify-content: center
-}
-
-.subMenuOpen {
-    margin-bottom: 0 !important;
-    text-decoration: none !important
-}
-
-.menuItemHeader {
-    padding: 10px;
-    text-align: left;
-    margin-left: 20px;
-    color: #aaa;
-    font-size: .85rem !important
-}
-
-.menu-button {
-    border: none;
-    background-color: transparent;
-    display: flex;
-    justify-content: center;
-    color: #f2f2f2;
-    padding: 10px
-}
-
-.collapsed {
-    width: 70px
-}
-
-.expanded {
-    width: 256px;
-    text-align: center
-}
-
-.profile {
-    padding: 7px;
-    text-align: center;
-    margin-bottom: 20px
-}
-
-.profile img {
-    border-radius: 0;
-    min-width: 50px;
-    max-width: 140px;
-    width: 100%;
-    cursor: pointer
-}
-
-.profile-name {
-    padding: 10px 0;
-    font-size: 18px
-}
-
-.menu-items ul {
-    list-style: none;
-    padding: 0;
-    padding-left: 10px;
-    padding-right: 10px;
-    margin: 0
-}
-
-div:has(.expanded) #module-component {
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    overflow-y: auto;
-    display: grid;
-    grid-template-columns: 16rem 1fr;
-    background-color: #f4f6f9
-}
-
-div:has(.expanded) #footer-component {
-    padding: 1rem;
-    background-color: transparent;
-    text-align: center;
-    z-index: 2;
-    grid-column: 2/4;
-    grid-row: 3/4;
-    transition: width .3s;
-    font-size: 14px;
-    color: #077cab;
-    display: flex;
-    justify-content: center;
-    align-items: flex-end
-}
-
-div:has(.expanded) .card {
-    box-shadow: 0 0 1px 0 rgba(0, 0, 0, .1);
-    border: 0;
-    transition: .3s;
-    border-radius: 3px;
-    width: 95%;
-    padding: 20px;
-    margin: auto;
-    margin-top: 20px;
-    margin-bottom: 20px;
-    z-index: 1;
-    grid-column: 2/4
-}
-
-div:has(.collapsed) #module-component {
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    overflow-y: auto;
-    display: grid;
-    grid-template-columns: 5rem 1fr;
-    grid-template-rows: 1fr 1fr 1fr;
-    background-color: #f4f6f9
-}
-
-div:has(.collapsed) #footer-component {
-    padding: 1rem;
-    background-color: transparent;
-    text-align: center;
-    z-index: 2;
-    grid-column: 2/4;
-    grid-row: 3/4;
-    transition: width .3s;
-    font-size: 14px;
-    color: #52bf90;
-    display: flex;
-    justify-content: center;
-    align-items: flex-end
-}
-
-div:has(.collapsed) .card {
-    box-shadow: 0 0 1px 0 rgba(0, 0, 0, .1);
-    border: 0;
-    transition: .3s;
-    border-radius: 3px;
-    width: 95%;
-    padding: 20px;
-    margin: auto;
-    margin-top: 20px;
-    margin-bottom: 20px;
-    grid-column: 2/4
+.btn_removeBKColor {
+    background-color: transparent !important;
+    border: 0 !important
 }
 
 .blue-text {
@@ -326,11 +173,13 @@ p {
 
 #register_track_form input,
 #register_track_form select,
-#register_track_form textarea {
+#register_track_form textarea,
+input {
     border-radius: 3px !important
 }
 
-#register_track_form .submit-button {
+#register_track_form .submit-button,
+.submit-button {
     background-color: #077cab !important;
     color: #f2f2f2 !important;
     border-radius: 3px !important
@@ -346,6 +195,119 @@ p {
 
 small {
     font-size: .78rem !important
+}
+
+#global {
+    grid-template-columns: 16rem 1fr;
+    grid-template-rows: 4rem 100%
+}
+
+#global,
+.topNavBarC {
+    display: grid !important
+}
+
+.topNavBarC {
+    background-color: #0259c2 !important;
+    grid-column: 1/3;
+    grid-row: 1/3
+}
+
+.sideNavBarC {
+    background-color: #fff !important;
+    grid-column: 1/2
+}
+
+.moduleComponent,
+.sideNavBarC {
+    display: grid !important;
+    grid-row: 2/3
+}
+
+.moduleComponent {
+    grid-column: 2/3;
+    background-color: #f4f6f9 !important
+}
+
+.userName {
+    font-size: 1.1rem !important
+}
+
+.userName,
+.userRole {
+    color: #969696;
+    font-weight: 400 !important
+}
+
+.userRole {
+    font-size: .9rem !important
+}
+
+div:has(.collapsed) .moduleComponent {
+    grid-column: 2/3;
+    grid-row: 2/3;
+    transition: .3s
+}
+
+div:has(.collapsed) .sideNavBarC {
+    grid-column: 1/2;
+    grid-row: 2/3;
+    transition: .3s
+}
+
+.card {
+    box-shadow: 0 0 1px 0 rgba(0, 0, 0, .1);
+    border: 0 !important;
+    transition: .3s !important;
+    border-radius: 3px !important;
+    width: 95%;
+    padding: 20px;
+    margin: auto;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    z-index: 1
+}
+
+div:has(.hide_bar) .moduleComponent {
+    grid-column: 1/3;
+    grid-row: 2/3;
+    transition: .3s
+}
+
+div:has(.hide_bar) .sideNavBarC {
+    grid-column: 1/1;
+    grid-row: 2/3;
+    transition: .3s
+}
+
+nav.navbar {
+    padding-top: 0 !important
+}
+
+.menuItem {
+    font-size: 1rem !important
+}
+
+.menuItem:hover {
+    cursor: pointer;
+    background-color: #0259c2;
+    color: #fff
+}
+
+.menuSubItem {
+    font-size: 1rem !important
+}
+
+.menuSubItem:hover,
+.menuSubItem:hover a {
+    cursor: pointer;
+    background-color: #0259c2;
+    color: #fff !important
+}
+
+a {
+    text-decoration: none !important;
+    color: #1d2228 !important
 }
 
 td,
