@@ -197,11 +197,19 @@ define(['N/log', 'N/encode', 'N/file', 'N/xml', 'N/record', 'N/search', 'N/runti
                 })
                 epcis_is_correct.success = true;
                 epcis_is_correct.message = 'Your EPCIS file has been properly validated.';
+                if (epcis_is_correct.success == true) {
+                    let relate_transaction_epcis_result = relate_transaction_epcis(epcis_is_correct.record_id);
+                    log.debug({ title:'relate_transaction_epcis_result', details:relate_transaction_epcis_result });
+                    if (relate_transaction_epcis_result.success == false) {
+                        throw relate_transaction_epcis_result.error;
+                    }
+                }
             } catch (error) {
                 epcis_is_correct.success = false;
                 epcis_is_correct.message = error;
                 log.error({ title:'reduce Error', details:epcis_is_correct.message });
             }
+            
             let record_updated = update_result_grouping(epcis_is_correct);
             reduceContext.write({
                 key: key,
@@ -241,6 +249,268 @@ define(['N/log', 'N/encode', 'N/file', 'N/xml', 'N/record', 'N/search', 'N/runti
             } catch (error) {
                 log.error({ title:'summarize', details:error });
             }
+        }
+
+        function relate_transaction_epcis(suitetrace_grouping) {
+            const response = {success: false, error: '', item_receipt_related: ''};
+            try {
+                log.debug({ title:'suitetrace_grouping', details:suitetrace_grouping });
+                let get_info_epcis_grouping_response = get_info_epcis_grouping(suitetrace_grouping);
+                log.debug({ title:'get_info_epcis_grouping_response', details:get_info_epcis_grouping_response });
+                if (get_info_epcis_grouping_response.success == false) {
+                    throw get_info_epcis_grouping_response.error;
+                }
+                let get_item_receipt_response = get_item_receipt(get_info_epcis_grouping_response.data.vendor);
+                log.debug({ title:'get_item_receipt_response', details:get_item_receipt_response });
+                if (get_item_receipt_response.success == false) {
+                    throw get_item_receipt_response.error;
+                }
+                let control_flag = false;
+                get_item_receipt_response.data.forEach(element => {
+                    // log.debug({ title:'Element', details:element });
+                    if (element.items.length == get_info_epcis_grouping_response.data.lines.length) {
+                        log.debug({ title:'Mismo numero de lineas', details:'Mismo numero de lineas en epcis y item receipt' });
+                        log.debug({ title:'Element', details:element });
+                        log.debug({ title:'Epcis', details:get_info_epcis_grouping_response.data });
+                        let control_flag2 = true;
+                        for (let itemLine = 0; itemLine < element.items.length; itemLine++) {
+                            let transaction_item = element.items[itemLine];
+                            log.debug({ title:'transaction_item', details:transaction_item });
+                            let control_flag3 = false;
+                            for (let epcisLine = 0; epcisLine < get_info_epcis_grouping_response.data.lines.length; epcisLine++) {
+                                let epcis_item = get_info_epcis_grouping_response.data.lines[epcisLine];
+                                log.debug({ title:'epcis_item', details:epcis_item });
+                                if (transaction_item.item == epcis_item.item && transaction_item.lot_number == epcis_item.lot_number && transaction_item.quantity == epcis_item.quantity) { // linea encontrada
+                                    control_flag3 = true;
+                                    break;
+                                }
+                            }
+                            if (control_flag3 == false) {
+                                control_flag2 = false;
+                                break;
+                            }
+
+                        }
+                        if (control_flag2 == true) {
+                            control_flag = true;
+                            response.item_receipt_related = element
+                        }
+                    }
+                });
+                if (control_flag == false) {
+                    throw 'No relationship was found with the epcis file and transactions in Netsuite.'
+                }else{
+                    response.success = true;
+                    let submit_item_receipt = record.submitFields({
+                        type: record.Type.ITEM_RECEIPT,
+                        id: response.item_receipt_related.internalId,
+                        values: {
+                           'custbody_tkio_suitetrace_related_epcis' : suitetrace_grouping
+                        }
+                    });
+                }
+            } catch (error) {
+                log.error({ title:'relate_transaction_epcis', details:error });
+                response.success = false;
+                response.error = error;
+            }
+            return response;
+        }
+
+        function get_item_receipt(vendor) {
+            const response = {success: false, error: '', data: []};
+            try {
+                var itemreceiptSearchObj = search.create({
+                    type: search.Type.ITEM_RECEIPT,
+                    filters:
+                    [
+                       ["vendor.internalid","anyof",vendor], 
+                       "AND", 
+                       ["custbody_tkio_suitetrace_related_epcis","anyof","@NONE@"], 
+                       "AND", 
+                       ["mainline","is","F"]
+                    ],
+                    columns:
+                    [
+                        search.createColumn({name: "internalid", label: "Internal ID"}),
+                        search.createColumn({name: "tranid", label: "Document Number"}),
+                        search.createColumn({name: "item", label: "Item"}),
+                        search.createColumn({name: "quantityuom", label: "Quantity in Transaction Units"}),
+                        search.createColumn({name: "serialnumbers", label: "Serial/Lot Numbers"}),
+                        search.createColumn({
+                           name: "trandate",
+                           sort: search.Sort.ASC,
+                           label: "Date"
+                        })
+                    ]
+                });
+                var myPagedData = itemreceiptSearchObj.runPaged({
+                    pageSize: 1000
+                });
+                log.debug("Resultados de item_receipt",myPagedData.count);
+                let group_information = [];
+                if (myPagedData.count > 0) {
+                    myPagedData.pageRanges.forEach(function(pageRange){
+                        var myPage = myPagedData.fetch({index: pageRange.index});
+                        myPage.data.forEach(function(result){
+                            let lineObj = {
+                                internalId: result.getValue({name: 'internalid'}),
+                                docNumber : result.getValue({name: 'tranid'}),
+                                docDate : result.getValue({name: 'trandate'}),
+                                items: []
+                            }
+                            let lineItem ={
+                                item : result.getValue({name: 'item'}),
+                                lot_number : result.getValue({name: 'serialnumbers'}),
+                                quantity: result.getValue({name: 'quantityuom'})
+                            }
+                            lineObj.items.push(lineItem);
+                            let transaction_aux = group_information.findIndex((element) => element.internalId == lineObj.internalId);
+                            if (transaction_aux != -1) {
+                                group_information[transaction_aux].items.push(lineItem);
+                            }else{
+                                group_information.push(lineObj);
+                            }
+                            // log.debug({ title:'lineObj', details:lineObj });
+                        });
+                    });
+                    // log.debug({ title:'group_information', details:group_information });
+                    response.data = group_information;
+                    response.success = true;
+                }else{
+                    throw 'No hay transacciones para el SuiteTrace Grouping ingresado';
+                }
+            } catch (error) {
+                log.error({ title:'get_items_receipt', details:error });
+                response.success = false;
+                response.error = error;
+            }
+            return response;
+        }
+
+        function get_info_epcis_grouping(suitetrace_grouping) {
+            const response = {success: false, error: '', data: {vendor: '', lines: []}}
+            try {
+                var suitetrace_epcis_search = search.create({
+                    type: CUSTOM_RECORD_EPCIS_TRANSACTION,
+                    filters:
+                    [
+                       ["custrecord_tkio_suitetrace_grouping","anyof",suitetrace_grouping]
+                    ],
+                    columns:
+                    [
+                       search.createColumn({
+                          name: "internalid",
+                          sort: search.Sort.DESC,
+                          label: "Internal ID"
+                       }),
+                       search.createColumn({name: "custrecord_tkio_is_th_file", label: "Is TH from file"}),
+                       search.createColumn({name: "custrecord_tkio_transaction_list", label: "Transaction"}),
+                       search.createColumn({name: "custrecord_tkio_wetrack_lot_number", label: "Lot Number"}),
+                       search.createColumn({name: "custrecord_tkio_lot_location", label: "Lot Location"}),
+                       search.createColumn({name: "custrecord_wetrack_gtin", label: "Item"}),
+                       search.createColumn({name: "custrecord_tkio_wetrack_sgln", label: "Sender SGLN"}),
+                       search.createColumn({name: "custrecord_tkio_receiver_sgln", label: "Receiver SGLN"}),
+                       search.createColumn({name: "custrecord_tkio_shipment_date", label: "Shipment Date"}),
+                       search.createColumn({name: "custrecord_tkio_wetrack_level_1", label: "Level 1"}),
+                       search.createColumn({name: "custrecord_tkio_wetrack_level_2", label: "Level 2"}),
+                       search.createColumn({name: "custrecord_tkio_wetrack_level_3", label: "Level 3"}),
+                       search.createColumn({name: "custrecord_tkio_lot_is_suspicious", label: "Lot is Suspicious"}),
+                       search.createColumn({name: "custrecord_tkio_is_in_quarantine", label: "Is in quarantine"}),
+                       search.createColumn({name: "custrecord_tkio_sender_loc_sgln", label: "Sender of Location SGLN"}),
+                       search.createColumn({name: "custrecord_tkio_receiver_loc_sgln", label: "Receiver of Location SGLN"}),
+                       search.createColumn({name: "custrecord_wetrack_ti_id_related", label: "Transaction Information ID related"}),
+                       search.createColumn({name: "custrecord_tkio_suitetrace_grouping", label: "SuiteTrace Grouping"}),
+                       search.createColumn({name: "custrecord_tkio_suitetrace_item_name", label: "Product Name"}),
+                       search.createColumn({name: "custrecord_tkio_suitetrace_mt_name", label: "Manufacturer/Trader Name "}),
+                       search.createColumn({name: "custrecord_tkio_suitetrace_dosage", label: "Dosage"}),
+                       search.createColumn({name: "custrecord_tkio_suitetrace_strength", label: "Strength"}),
+                       search.createColumn({name: "custrecord_tkio_suitetrace_container_sz", label: "Container Size"}),
+                       search.createColumn({name: "custrecord_tkio_suitetrace_expiry_date", label: "Expiration Date"}),
+                       search.createColumn({name: "custrecord_tkio_suitetrace_sender_name", label: "Sender Name"}),
+                       search.createColumn({name: "custrecord_tkio_suitetrace_sender_addr1", label: "Sender Street Address One"}),
+                       search.createColumn({name: "custrecord_tkio_suitetrace_sender_addr2", label: "Sender Street Address Two"}),
+                       search.createColumn({name: "custrecord_tkio_suitetrace_sender_city", label: "Sender City"}),
+                       search.createColumn({name: "custrecord_tkio_suitetrace_sender_state", label: "Sender State"}),
+                       search.createColumn({name: "custrecord_tkio_suitetrace_sender_pc", label: "Sender Postal Code"}),
+                       search.createColumn({name: "custrecord_tko_suitetrace_sender_cc", label: "Sender Country Code"}),
+                       search.createColumn({name: "custrecord_tkio_suitetrace_rec_name", label: "Receiver Name"}),
+                       search.createColumn({name: "custrecord_tkio_suitetrace_rec_addr1", label: "Receiver Street Address One"}),
+                       search.createColumn({name: "custrecord_tkio_suitetrace_rec_addr2", label: "Receiver Street Address Two"}),
+                       search.createColumn({name: "custrecord_tkio_suitetrace_rec_city", label: "Receiver City"}),
+                       search.createColumn({name: "custrecord_tkio_suitetrace_rec_state", label: "Receiver State"}),
+                       search.createColumn({name: "custrecord_tkio_suitetrace_rec_cc", label: "Receiver Country Code"}),
+                       search.createColumn({name: "custrecord_tkio_suitetrace_sen_loc_name", label: "Sender Location Name"}),
+                       search.createColumn({name: "custrecord_tkio_suitetrace_sen_loc_addr1", label: "Sender Location Address One"}),
+                       search.createColumn({name: "custrecord_tkio_suitetrace_sen_loc_addr2", label: "Sender Location Address Two"}),
+                       search.createColumn({name: "custrecord_tkio_suitetrace_sen_loc_city", label: "Sender Location City"}),
+                       search.createColumn({name: "custrecord_tkio_suitetrace_sen_loc_state", label: "Sender Location State"}),
+                       search.createColumn({name: "custrecord_tkio_suitetrace_sen_loc_pc", label: "Sender Location Postal Code"}),
+                       search.createColumn({name: "custrecord_tkio_suitetrace_sen_loc_cc", label: "Sender Location Country Code"}),
+                       search.createColumn({name: "custrecord_tkio_suitetrace_rec_loc_name", label: "Receiver Location Name"}),
+                       search.createColumn({name: "custrecord_tkio_suitetrace_rec_loc_addr1", label: "Receiver Location Address One"}),
+                       search.createColumn({name: "custrecord_tkio_suitetrace_rec_loc_addr2", label: "Receiver Location Address Two"}),
+                       search.createColumn({name: "custrecord_tkio_suitetrace_rec_loc_city", label: "Receiver Location City"}),
+                       search.createColumn({name: "custrecord_tkio_suitetrace_rec_loc_state", label: "Receiver Location State"}),
+                       search.createColumn({name: "custrecord_tkio_suitetrace_rec_loc_pc", label: "Receiver Location Postal Code"}),
+                       search.createColumn({name: "custrecord_tkio_suitetrace_rec_loc_cc", label: "Receiver Location Country Code"}),
+                       search.createColumn({name: "custrecord_tkio_suitetrace_epcis_file", label: "EPCIS File"}),
+                       search.createColumn({name: "custrecord_tkio_suitetrace_ts", label: "Transaction Statement"}),
+                       search.createColumn({
+                        name: "custrecord_tkio_suitetrace_grp_gln",
+                        join: "CUSTRECORD_TKIO_SUITETRACE_GROUPING",
+                        label: "GLN"
+                     })
+                    ]
+                });
+                var myPagedData1 = suitetrace_epcis_search.runPaged({
+                    pageSize: 1000
+                });
+                log.debug("Resultados de epcis_group",myPagedData1.count);
+                let transaction_information = [];
+                if (myPagedData1.count > 0) {
+                    let lineAux = 0;
+                    myPagedData1.pageRanges.forEach(function(pageRange){
+                        var myPage = myPagedData1.fetch({index: pageRange.index});
+                        myPage.data.forEach(function(result){
+                            if (lineAux == 0) {
+                                response.data.vendor = result.getValue({
+                                    name: "custrecord_tkio_suitetrace_grp_gln",
+                                    join: "CUSTRECORD_TKIO_SUITETRACE_GROUPING",
+                                    label: "GLN"
+                                });
+                            }
+                            lineAux++;
+                            let lineObj = {
+                                is_TH : result.getValue({name: 'custrecord_tkio_is_th_file'}),
+                                lot_number : result.getValue({name: 'custrecord_tkio_wetrack_lot_number'}),
+                                item : result.getValue({name: 'custrecord_wetrack_gtin'}),
+                                quantity: 1,
+                                concat: result.getValue({name: 'custrecord_wetrack_gtin'}) + '-' + result.getValue({name: 'custrecord_tkio_wetrack_lot_number'})
+                            }
+                            // log.debug({ title:'lineObj: ' +lineAux, details:lineObj });
+                            if (lineObj.is_TH == false) {
+                                let item_duplicated = transaction_information.findIndex((element) => element.concat == lineObj.concat)
+                                if (item_duplicated != -1) {
+                                    transaction_information[item_duplicated].quantity++;
+                                }else{
+                                    transaction_information.push(lineObj);
+                                }
+                            }
+                        });
+                    });
+                    // log.debug({ title:'transaction_information', details:transaction_information });
+                    response.data.lines = transaction_information;
+                    response.success = true;
+                }else{
+                    throw 'No hay registros con el SuiteTrace Grouping ingresado';
+                }
+            } catch (error) {
+                log.error({ title:'get_info_epcis_grouping', details:error });
+                response.success = false;
+                response.error = error;
+            }
+            return response;
         }
 
         function send_email(data_details) {
@@ -863,8 +1133,7 @@ define(['N/log', 'N/encode', 'N/file', 'N/xml', 'N/record', 'N/search', 'N/runti
                         fieldId: 'custrecord_tkio_suitetrace_ts',
                         value: obj.transaction_statement
                     });
-
-
+                    // TODO descomentar save
                     id_record_transactionInformation = objRecord.save();
                 } else {
                     retrieve_compare_NDC_withTH_item(obj.ndc, obj);
@@ -1070,6 +1339,7 @@ define(['N/log', 'N/encode', 'N/file', 'N/xml', 'N/record', 'N/search', 'N/runti
                         fieldId: 'custrecord_tkio_suitetrace_epcis_file',
                         value: obj.epcis_document
                     });
+                    // TODO descomentar save
                     objRecord.save();
 
 
