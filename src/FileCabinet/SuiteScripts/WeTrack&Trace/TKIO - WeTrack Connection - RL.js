@@ -48,11 +48,11 @@ define(['N/log', 'N/encode', 'N/file', 'N/xml', 'N/record', 'N/search', 'N/runti
          * @since 2015.2
          */
         const post = (requestBody) => {
+            log.audit({ title:'requestBody', details:requestBody });
             try {
                 var scriptObj = runtime.getCurrentScript();
                 var folderID = scriptObj.getParameter({ name: 'custscript_tkio_wetrack_epcis_folder_id' });
                 if (folderID !== '') {
-
                     let gln = requestBody.gln;
                     if (!gln) {
                         throw "Missing 'gln' in JSON";
@@ -62,20 +62,25 @@ define(['N/log', 'N/encode', 'N/file', 'N/xml', 'N/record', 'N/search', 'N/runti
                     if (validate_gln_result.success == false || !validate_gln_result.vendorId || !validate_gln_result.email_send) {
                         throw validate_gln_result.error;
                     }
-
+                    let validate_folder_result = validate_folder(validate_gln_result.vendorName, gln, folderID);
+                    log.debug({ title:'validate_folder_result', details:validate_folder_result });
+                    if (validate_folder_result.success == false || !validate_folder_result.folderID) {
+                        throw validate_folder_result.error;
+                    }
                     let decoded = encode.convert({
                         string: requestBody.file_content,
                         inputEncoding: encode.Encoding.BASE_64,
                         outputEncoding: encode.Encoding.UTF_8
                     });
-
-                    let date = Date.now();
+                    let fecha = new Date();
+                    let dateStructure = fecha.getDate() + '-' + (fecha.getMonth()+1) + '-' + fecha.getFullYear() + '_' + fecha.toLocaleTimeString('en-US');
+                    log.debug({ title:'dateStructure', details:dateStructure });
                     var fileObj = file.create({
-                        name: 'EPCIS-' + gln + " - " + date + '.xml',
+                        name: 'EPCIS_' + gln + "_" + dateStructure + '.xml',
                         fileType: file.Type.XMLDOC,
                         contents: decoded
                     });
-                    fileObj.folder = folderID;
+                    fileObj.folder = validate_folder_result.folderID;
                     file_id_uploaded = fileObj.save();
                     // TODO hacer la validacion antes de guardar el archivo.
                     let validaXML_response = validateXML(decoded);
@@ -98,13 +103,14 @@ define(['N/log', 'N/encode', 'N/file', 'N/xml', 'N/record', 'N/search', 'N/runti
                 epcis_is_correct.record_id = '';
                 epcis_is_correct.message = err;
             }
+            log.audit({ title:'epcis_is_correct', details:epcis_is_correct });
             return JSON.stringify(epcis_is_correct)
         }
 
         function validate_gln(gln) {
-            const response = {success: false, error: '', vendorId: '', email_send: ''}
+            const response = {success: false, error: '', vendorName: '', vendorId: '', email_send: ''}
             try {
-                log.debug({ title:'gln', details:gln });
+                // log.debug({ title:'gln', details:gln });
                 const vendorSearchObj = search.create({
                     type: search.Type.VENDOR,
                     filters:
@@ -135,13 +141,14 @@ define(['N/log', 'N/encode', 'N/file', 'N/xml', 'N/record', 'N/search', 'N/runti
                 const myPagedData = vendorSearchObj.runPaged({
                     pageSize: 1000
                 });
-                log.debug("Resultados de vendor",myPagedData.count);
+                // log.debug("Resultados de vendor",myPagedData.count);
                 if (myPagedData.count > 0) {
                     if (myPagedData.count == 1) {
                         myPagedData.pageRanges.forEach(function(pageRange){
                             let myPage = myPagedData.fetch({index: pageRange.index});
                             myPage.data.forEach(function(result){
                                 response.vendorId = result.getValue({name: 'internalid'});
+                                response.vendorName = result.getValue({name: 'entityid'});
                                 let email_location = result.getValue({
                                     name: "custrecord_tkio_suitetrace_email_loc",
                                     join: "Address",
@@ -168,6 +175,133 @@ define(['N/log', 'N/encode', 'N/file', 'N/xml', 'N/record', 'N/search', 'N/runti
                 }
             } catch (error) {
                 log.error({ title:'validate_gln', details:error });
+                response.success = false;
+                response.error = error;
+            }
+            return response;
+        }
+
+        function validate_folder(vendorName, gln, parentFolder) {
+            const response = {success: false, error: '', folderID: ''}
+            try {
+                log.debug({ title:'params', details:{vendorName: vendorName, gln: gln, parentFolder: parentFolder} });
+                let vendor_folder_result = search_folder(vendorName, parentFolder);
+                log.debug({ title:'vendor_folder_result', details:vendor_folder_result });
+                if (vendor_folder_result.success == false) {
+                    throw vendor_folder_result.error;
+                }
+                let vendor_folder_id;
+                if (vendor_folder_result.folderID == -1) { // crear vendorFolder
+                    let create_vendor_folder = create_folder(vendorName, parentFolder);
+                    log.debug({ title:'create_vendor_folder', details:create_vendor_folder });
+                    if (create_vendor_folder.success == false) {
+                        throw create_vendor_folder.error;
+                    }
+                    vendor_folder_id = create_vendor_folder.folderID;
+                }else{ // ya existe el vendorFolder
+                    vendor_folder_id = vendor_folder_result.folderID;
+                }
+                log.debug({ title:'vendor_folder_id', details:vendor_folder_id });
+                let gln_folder_result = search_folder(gln, vendor_folder_id);
+                log.debug({ title:'gln_folder_result', details:gln_folder_result });
+                if (gln_folder_result.success == false) {
+                    throw gln_folder_result.error;
+                }
+                let gln_folder_id;
+                if (gln_folder_result.folderID == -1) { // crear glnFolder
+                    let create_gln_folder = create_folder(gln, vendor_folder_id);
+                    log.debug({ title:'create_gln_folder', details:create_gln_folder });
+                    if (create_gln_folder.success == false) {
+                        throw create_gln_folder.error;
+                    }
+                    gln_folder_id = create_gln_folder.folderID;
+                }else{ // ya existe el glnFolder
+                    gln_folder_id = gln_folder_result.folderID;
+                }
+                log.debug({ title:'gln_folder_id', details:gln_folder_id });
+                if (gln_folder_id) {
+                    response.folderID = gln_folder_id;
+                }else{
+                    response.folderID = parentFolder;
+                }
+                response.success = true;
+            } catch (error) {
+                log.error({ title:'validate_folder', details:error });
+                response.success = false;
+                response.error = error;
+            }
+            return response;
+        }
+
+        function search_folder(folderName, parentFolder) {
+            const response = {success: false, error: '', folderID: -1}
+            try {
+                const folderSearchVendor = search.create({
+                    type: search.Type.FOLDER,
+                    filters:
+                    [
+                       ["parent", search.Operator.ANYOF, parentFolder],
+                       "AND", 
+                       ["name", search.Operator.IS, folderName]
+                    ],
+                    columns:
+                    [
+                        search.createColumn({
+                            name: "internalid",
+                            sort: search.Sort.ASC,
+                            label: "Internal ID"
+                        }),
+                        search.createColumn({name: "name", label: "Name"}),
+                        search.createColumn({name: "foldersize", label: "Size (KB)"}),
+                        search.createColumn({name: "lastmodifieddate", label: "Last Modified"}),
+                        search.createColumn({name: "parent", label: "Sub of"}),
+                        search.createColumn({name: "numfiles", label: "# of Files"})
+                    ]
+                });
+                const myPagedData = folderSearchVendor.runPaged({
+                    pageSize: 1000
+                });
+                // log.debug("Resultados de folders",myPagedData.count);
+                if (myPagedData.count > 0) { // obtener folder
+                    myPagedData.pageRanges.forEach(function(pageRange){
+                        let myPage = myPagedData.fetch({index: pageRange.index});
+                        myPage.data.forEach(function(result){
+                            response.folderID = result.getValue({name: 'internalid'});
+                        });
+                    });
+                }
+                response.success = true;
+            } catch (error) {
+                log.error({ title:'search_folder', details:error });
+                response.success = false;
+                response.error = error;
+            }
+            return response;
+        }
+
+        function create_folder(folderName, parentFolder) {
+            const response = {success: false, error: '', folderID: -1}
+            try {
+                let objFolder = record.create({
+                    type: record.Type.FOLDER,
+                    isDynamic: true
+                });
+
+                objFolder.setValue({
+                    fieldId: 'name',
+                    value: folderName
+                });
+                objFolder.setValue({
+                    fieldId: 'parent',
+                    value: parentFolder
+                });
+                response.folderID = objFolder.save({
+                    enableSourcing: true,
+                    ignoreMandatoryFields: true
+                });
+                response.success = true;
+            } catch (error) {
+                log.error({ title:'create_folder', details:error });
                 response.success = false;
                 response.error = error;
             }
