@@ -1,10 +1,10 @@
 /**
  * @NApiVersion 2.1
  * @NScriptType UserEventScript
- * @name ST - EPCIS RECORD UE
+ * @name ST - EPCIS INVENTORY MOVEMENT UE
  * @version 1.0
  * @author Dylan Mendoza <dylan.mendoza@freebug.mx>
- * @summary This script will create the records for epcis information for NetSuite
+ * @summary This script will create the records for transactions movements
  * @copyright FreeBug 2023
  * 
  * Client              -> Product
@@ -54,9 +54,7 @@ define(['N/currentRecord', 'N/log', 'N/runtime', './st_epcis_record_const', './s
          */
         const afterSubmit = (scriptContext) => {
             try {
-                var lotsdata = lib.searchLotData(scriptContext.newRecord.id);
-        
-                lib.createEPCISrecords(lotsdata);
+                
             } catch (error) {
                 log.error({title:'afterSubmit', details:error});
             }
