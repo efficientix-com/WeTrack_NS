@@ -23,12 +23,6 @@ define(["../Enum/TKIO - Const Lib", "N/log", "N/error", "N/xml", "N/file", "N/se
    
     function (constLib, log, newError, xml, file, search) {
 
-        /**
-         * The function `generateEpcis` generates and saves an EPCIS file in a specified folder.
-         * @param folderEpcis - The `folderEpcis` parameter is the folder where the EPCIS file will be
-         * saved.
-         * @returns The function `generateEpcis` returns an object with the following properties:
-         */
         const generateEpcis = (folderEpcis) =>{
             const response = {success: false, error: '', epcisFile: ''}
             try {
@@ -68,6 +62,15 @@ define(["../Enum/TKIO - Const Lib", "N/log", "N/error", "N/xml", "N/file", "N/se
             return response;
         }
 
+        /**
+         * The `validateFolder` function checks if a folder exists in Netsuite based on the provided
+         * folder ID.
+         * @param folderId - The folderId parameter is the internal ID of the folder that you want to
+         * validate.
+         * @returns The function `validateFolder` returns an object with two properties: `success` and
+         * `error`. The `success` property indicates whether the folder exists or not, and the `error`
+         * property contains an error message if any error occurs during the validation process.
+         */
         const validateFolder = (folderId) =>{
             const response = {success: false, error: ''};
             try {
