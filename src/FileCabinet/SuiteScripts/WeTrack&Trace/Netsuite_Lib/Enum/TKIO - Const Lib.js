@@ -12,5 +12,5 @@ define([], () => {
     RECORDS.CONFIG.FIELDS.DATE = 'Date'
 
     return { RECORDS }
-  })
+});
   
