@@ -17,7 +17,7 @@ define(['N/log', './Netsuite_Lib/Mod/TKIO - SuiteTrace EPCIS xml generator'],
         const onRequest = (scriptContext) => {
             try {
                 let jsonResponse = {};
-                jsonResponse.resultPrueba = epcisXMLGenerator.generateEpcis(345);
+                jsonResponse = epcisXMLGenerator.generateEpcis(4101);
                 log.debug({ title:'jsonResponse', details:jsonResponse });
             } catch (error) {
                 log.error({ title:'test_generador_xml', details:error });
