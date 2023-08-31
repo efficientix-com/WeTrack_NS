@@ -71,6 +71,13 @@ define(['N/log', 'N/search', 'N/record', 'N/format', 'N/query', 'N/runtime'],
                     title: "here",
                     details: "Passed"
                 })
+                if(params.getItems){
+                    var res_data=searchItems();
+                    const cast_res_data=JSON.stringify(res_data);
+                    response.write({
+                        output:cast_res_data
+                    });
+                }
                 if (params.getSearchTracing) {
                     var result_data = track_query();
                     log.debug({
@@ -243,6 +250,42 @@ define(['N/log', 'N/search', 'N/record', 'N/format', 'N/query', 'N/runtime'],
                 log.error({ title: 'Error occurred in track_query2', details: err });
             }
         }
+        const searchItems = () => {
+            try {
+                const itemSearchColName = search.createColumn({ name: 'itemid', sort: search.Sort.ASC });
+                const itemSearchColInternalId = search.createColumn({ name: 'internalid' });
+                const itemSearchColDisplayName = search.createColumn({ name: 'displayname' });
+                const itemSearch = search.create({
+                    type: 'item',
+                    filters: [
+                        ['class', 'anyof', '1', '101', '2'],
+                    ],
+                    columns: [
+                        itemSearchColName,
+                        itemSearchColInternalId,
+                        itemSearchColDisplayName,
+                    ],
+                });
+                // Note: Search.run() is limited to 4,000 results
+                // itemSearch.run().each((result: search.Result): boolean => {
+                //   return true;
+                // });
+                let arr_to_return=[]
+                const itemSearchPagedData = itemSearch.runPaged({ pageSize: 1000 });
+                for (let i = 0; i < itemSearchPagedData.pageRanges.length; i++) {
+                    const itemSearchPage = itemSearchPagedData.fetch({ index: i });
+                    itemSearchPage.data.forEach((result) => {
+                        const name = result.getValue(itemSearchColName);
+                        const internalId = result.getValue(itemSearchColInternalId);
+                        const displayName = result.getValue(itemSearchColDisplayName);
+                        arr_to_return.push(name+' - '+displayName);
+                    });
+                }
+                return arr_to_return;
+            } catch (err) {
+                log.error({ title: 'Error occurred in searchItems', details: err });
+            }
+        }
         const search3ts = () => {
             try {
                 const data_array = [];
@@ -324,6 +367,7 @@ define(['N/log', 'N/search', 'N/record', 'N/format', 'N/query', 'N/runtime'],
                         ['isinactive', 'is', 'F'],
                         'AND',
                         ['custrecord_tkio_suitetrace_grouping.isinactive', 'is', 'F'],
+                        
                     ],
                     columns: [
 
@@ -557,168 +601,34 @@ define(['N/log', 'N/search', 'N/record', 'N/format', 'N/query', 'N/runtime'],
                         )
                     });
                 }
-                // const reducedData = data_array.reduce((accumulator, currentItem) => {
-                //     const {
-                //         sgtin,
-                //         dateCreated,
-                //         isThFromFile,
-                //         transaction,
-                //         transaction_text,
-                //         lotNumber,
-                //         lotLocation,
-                //         item,
-                //         item_ndc,
-                //         senderSgln,
-                //         receiverSgln,
-                //         shipmentDate,
-                //         level1,
-                //         level2,
-                //         level3,
-                //         lotIsSuspicious,
-                //         isInQuarantine,
-                //         senderOfLocationSgln,
-                //         receiverOfLocationSgln,
-                //         transactionInformationIdRelated,
-                //         suitetraceGrouping,
-                //         productName,
-                //         manufacturertraderName,
-                //         dosage,
-                //         strength,
-                //         containerSize,
-                //         expirationDate,
-                //         senderName,
-                //         senderStreetAddressOne,
-                //         senderStreetAddressTwo,
-                //         senderCity,
-                //         senderState,
-                //         senderPostalCode,
-                //         senderCountryCode,
-                //         receiverName,
-                //         receiverStreetAddressOne,
-                //         receiverStreetAddressTwo,
-                //         receiverCity,
-                //         receiverState,
-                //         receiverCountryCode,
-                //         senderLocationName,
-                //         senderLocationAddressOne,
-                //         senderLocationAddressTwo,
-                //         senderLocationCity,
-                //         senderLocationState,
-                //         senderLocationPostalCode,
-                //         senderLocationCountryCode,
-                //         receiverLocationName,
-                //         receiverLocationAddressOne,
-                //         receiverLocationAddressTwo,
-                //         receiverLocationCity,
-                //         receiverLocationState,
-                //         receiverLocationPostalCode,
-                //         receiverLocationCountryCode,
-                //         epcisFile,
-                //         transactionStatement,
-                //         file,
-                //         hasError,
-                //         processStatus,
-                //         logMessages,
-                //         gln,
-                //         custrecordTkioSuitetraceGroupingCustrecordTkioSuitetraceHasError,
-                //         logMessageInternal,
-                //         suitetraceEmailOfLocation
-                //     } = currentItem;
-                //     // const { suitetraceGrouping, transaction, sgtin, item_ndc } = currentItem;
-                //     const key = `${suitetraceGrouping}-${transaction}-${sgtin}-${item_ndc}`;
-
-                //     if (!accumulator[key]) {
-                //         accumulator[key] = {
-                //             sgtin,
-                //             dateCreated,
-                //             isThFromFile,
-                //             transaction,
-                //             transaction_text,
-                //             lotNumber,
-                //             lotLocation,
-                //             item,
-                //             item_ndc,
-                //             senderSgln,
-                //             receiverSgln,
-                //             shipmentDate,
-                //             level1,
-                //             level2,
-                //             level3,
-                //             lotIsSuspicious,
-                //             isInQuarantine,
-                //             senderOfLocationSgln,
-                //             receiverOfLocationSgln,
-                //             transactionInformationIdRelated,
-                //             suitetraceGrouping,
-                //             productName,
-                //             manufacturertraderName,
-                //             dosage,
-                //             strength,
-                //             containerSize,
-                //             expirationDate,
-                //             senderName,
-                //             senderStreetAddressOne,
-                //             senderStreetAddressTwo,
-                //             senderCity,
-                //             senderState,
-                //             senderPostalCode,
-                //             senderCountryCode,
-                //             receiverName,
-                //             receiverStreetAddressOne,
-                //             receiverStreetAddressTwo,
-                //             receiverCity,
-                //             receiverState,
-                //             receiverCountryCode,
-                //             senderLocationName,
-                //             senderLocationAddressOne,
-                //             senderLocationAddressTwo,
-                //             senderLocationCity,
-                //             senderLocationState,
-                //             senderLocationPostalCode,
-                //             senderLocationCountryCode,
-                //             receiverLocationName,
-                //             receiverLocationAddressOne,
-                //             receiverLocationAddressTwo,
-                //             receiverLocationCity,
-                //             receiverLocationState,
-                //             receiverLocationPostalCode,
-                //             receiverLocationCountryCode,
-                //             epcisFile,
-                //             transactionStatement,
-                //             file,
-                //             hasError,
-                //             processStatus,
-                //             logMessages,
-                //             gln,
-                //             custrecordTkioSuitetraceGroupingCustrecordTkioSuitetraceHasError,
-                //             logMessageInternal,
-                //             suitetraceEmailOfLocation
-                //         };
-                //     }
-
-                //     return accumulator;
-                // }, {});
-
-                // const reducedArray = Object.values(reducedData);
+                
                 let aux = []
-
+                
                 data_array.forEach(element => {
-                    if (element.isThFromFile === false && element.suitetraceGrouping !== '' && element.transaction !== '') {
+                    log.emergency({
+                        title: "DATA_ARRAY",
+                        details: element
+                    });
+                    if (element.isThFromFile === false && element.suitetraceGrouping !== '' && element.transaction !== '' && element.isInternalMovement === false) {
+                        log.emergency({
+                            title: "STATEMENT",
+                            details: element.transactionStatement
+                        });
                         let data_to_push = {
-                            date_upload:element.dateCreated,
+                            date_upload: element.dateCreated,
                             purchase_order_id: element.transaction,
-                            purchase_orders:element.transaction_text,
-                            status_error:element.hasError,
+                            purchase_orders: element.transaction_text,
+                            status_error: element.hasError,
                             transaction_statement: element.transactionStatement,
-                            sender_name:element.senderName,
-                            sender_SGLN:element.senderSgln,
-                            sender_location_name:element.senderLocationName,
-                            sender_location_address:element.senderLocationAddressOne+', '+element.senderLocationAddressTwo+', '+element.senderLocationPostalCode+', '+element.senderLocationCity+', '+element.senderLocationState+','+element.senderLocationCountryCode,
-                            receiver_location_name:element.receiverLocationName,
-                            receiver_location_address:element.receiverLocationAddressOne+', '+element.receiverLocationAddressTwo+', '+element.receiverLocationPostalCode+', '+element.receiverLocationCity+', '+element.receiverLocationState+','+element.receiverLocationCountryCode,
-                            shipment_date:element.shipmentDate,
+                            sender_name: element.senderName,
+                            sender_SGLN: element.senderSgln,
+                            sender_location_name: element.senderLocationName,
+                            sender_location_address: element.senderLocationAddressOne + ', ' + element.senderLocationAddressTwo + ', ' + element.senderLocationPostalCode + ', ' + element.senderLocationCity + ', ' + element.senderLocationState + ',' + element.senderLocationCountryCode,
+                            receiver_location_name: element.receiverLocationName,
+                            receiver_location_address: element.receiverLocationAddressOne + ', ' + element.receiverLocationAddressTwo + ', ' + element.receiverLocationPostalCode + ', ' + element.receiverLocationCity + ', ' + element.receiverLocationState + ',' + element.receiverLocationCountryCode,
+                            shipment_date: element.shipmentDate,
                             grouping: element.suitetraceGrouping,
-                            logMessages:element.logMessages,
+                            logMessages: element.logMessages,
                             items_info: [],
                         }
                         const existingItem = aux.find(item => item.purchase_order_id === element.transaction && item.grouping === element.suitetraceGrouping);
@@ -731,10 +641,10 @@ define(['N/log', 'N/search', 'N/record', 'N/format', 'N/query', 'N/runtime'],
                     title: "AUX length",
                     details: aux.length
                 })
-                
+
                 aux.forEach(element => {
                     data_array.forEach(data => {
-                        if (element.purchase_order_id === data.transaction && element.grouping === data.suitetraceGrouping && data.isThFromFile === false && data.sgtin !== '' &&data.isInternalMovement === false) {
+                        if (element.purchase_order_id === data.transaction && element.grouping === data.suitetraceGrouping && data.isThFromFile === false && data.sgtin !== '' && data.isInternalMovement === false) {
                             let data_to_push = {
                                 sgtin: data.sgtin.split(":")[4],
                                 ndc: data.item_ndc,
@@ -747,7 +657,7 @@ define(['N/log', 'N/search', 'N/record', 'N/format', 'N/query', 'N/runtime'],
                                 level_2: data.level2 !== '' ? data.level2.split(":")[4] : '',
                                 level_3: data.level3 !== '' ? data.level3.split(":")[4] : '',
                                 trans_hist: [],
-                                receipts:[]
+                                receipts: []
                             }
                             const existingItem = element.items_info.find(item => item.sgtin === data_to_push.sgtin && item.ndc === data_to_push.ndc);
 
@@ -757,31 +667,42 @@ define(['N/log', 'N/search', 'N/record', 'N/format', 'N/query', 'N/runtime'],
                         }
                     })
                 });
-                aux.forEach(element=>{
-                    data_array.forEach(data=>{
+                aux.forEach(element => {
+                    data_array.forEach(data => {
                         element.items_info.forEach(info => {
-                            if(info.ndc===data.item_ndc){
+                            if (info.ndc === data.item_ndc) {
 
-                                if(element.purchase_order_id===data.transaction && data.isInternalMovement === true){
-                                    let data_to_push={
-                                        tranid:data.sourceTransaction,
-                                        item: data.item_ndc,
-                                        quantity:data.quantity,
-                                        trandate:data.shipmentDate, 
-                                        recordtype:data.type,
-                                        sender_location_address:data.senderLocationAddressOne+', '+data.senderLocationAddressTwo+', '+data.senderLocationPostalCode+', '+data.senderLocationCity+', '+data.senderLocationState+','+data.senderLocationCountryCode,
-                                        receiver_location_address:data.receiverLocationAddressOne+', '+data.receiverLocationAddressTwo+', '+data.receiverLocationPostalCode+', '+data.receiverLocationCity+', '+data.receiverLocationState+','+data.receiverLocationCountryCode,
-                                        product_name: data.productName,
-                                        dosage: data.dosage,
-                                        strength: data.strength,
-                                        container_size: data.containerSize,
-                                        sender_name:data.senderName,
-                                        receiver_name:data.receiverName
+                                if (element.purchase_order_id === data.transaction && data.isInternalMovement === true && data.isThFromFile === false) {
+                                    if(data.quantity!==''){
+
+                                        let data_to_push = {
+                                            tranid: data.sourceTransaction,
+                                            item: data.item_ndc,
+                                            quantity: data.quantity,
+                                            trandate: data.shipmentDate,
+                                            recordtype: data.type,
+                                            sender_location_address: data.senderLocationAddressOne + ', ' + data.senderLocationAddressTwo + ', ' + data.senderLocationPostalCode + ', ' + data.senderLocationCity + ', ' + data.senderLocationState + ',' + data.senderLocationCountryCode,
+                                            receiver_location_address: data.receiverLocationAddressOne + ', ' + data.receiverLocationAddressTwo + ', ' + data.receiverLocationPostalCode + ', ' + data.receiverLocationCity + ', ' + data.receiverLocationState + ',' + data.receiverLocationCountryCode,
+                                            product_name: data.productName,
+                                            dosage: data.dosage,
+                                            strength: data.strength,
+                                            container_size: data.containerSize,
+                                            sender_name: data.senderName,
+                                            receiver_name: data.receiverName
+                                        }
+                                        const exists = info.receipts.some(obj => obj.tranid === data_to_push.tranid);
+                                        if(!exists){
+    
+                                            info.receipts.push(data_to_push)
+                                        }
                                     }
-                                    info.receipts.push(data_to_push)
-        
+                                    log.emergency({
+                                        title: "INFO RECEIPTS",
+                                        details: info.receipts
+                                    });
+
                                     // const existingItem = element.item_receipts.find(item => item.sgtin === data_to_push.sgtin && item.ndc === data_to_push.ndc);
-        
+
                                 }
                             }
                         })
@@ -792,7 +713,7 @@ define(['N/log', 'N/search', 'N/record', 'N/format', 'N/query', 'N/runtime'],
                         element.items_info.forEach(info => {
                             if (element.grouping === data.suitetraceGrouping && data.isThFromFile === true && info.sgtin === data.sgtin.split(":")[4]) {
                                 let data_to_push = {
-                                    shipment_date:data.shipmentDate,
+                                    shipment_date: data.shipmentDate,
 
                                     sgtin: data.sgtin.split(":")[4],
                                     ndc: data.item_ndc,
@@ -806,38 +727,38 @@ define(['N/log', 'N/search', 'N/record', 'N/format', 'N/query', 'N/runtime'],
                                     level_2: data.level2 !== '' ? data.level2.split(":")[4] : '',
                                     level_3: data.level3 !== '' ? data.level3.split(":")[4] : '',
 
-                                    sender_name:data.senderName,
-                                    sender_SGLN:data.senderSgln,
-                                    sender_street_addr1:data.senderStreetAddressOne,
-                                    sender_street_addr2:data.senderStreetAddressTwo,
-                                    sender_city:data.senderCity,
-                                    sender_state:data.senderState,
-                                    sender_postalCode:data.senderPostalCode,
-                                    sender_countryCode:data.senderCountryCode,
-                                    sender_loc_name:data.senderLocationName,
-                                    sender_loc_street_addr1:data.senderLocationAddressOne,
-                                    sender_loc_street_addr2:data.senderLocationAddressTwo,
-                                    sender_loc_city:data.senderLocationCity,
-                                    sender_loc_state:data.senderLocationState,
-                                    sender_loc_postalCode:data.senderLocationPostalCode,
-                                    sender_loc_countryCod:data.senderLocationCountryCode,
+                                    sender_name: data.senderName,
+                                    sender_SGLN: data.senderSgln,
+                                    sender_street_addr1: data.senderStreetAddressOne,
+                                    sender_street_addr2: data.senderStreetAddressTwo,
+                                    sender_city: data.senderCity,
+                                    sender_state: data.senderState,
+                                    sender_postalCode: data.senderPostalCode,
+                                    sender_countryCode: data.senderCountryCode,
+                                    sender_loc_name: data.senderLocationName,
+                                    sender_loc_street_addr1: data.senderLocationAddressOne,
+                                    sender_loc_street_addr2: data.senderLocationAddressTwo,
+                                    sender_loc_city: data.senderLocationCity,
+                                    sender_loc_state: data.senderLocationState,
+                                    sender_loc_postalCode: data.senderLocationPostalCode,
+                                    sender_loc_countryCod: data.senderLocationCountryCode,
 
 
-                                    receiver_name:data.receiverName,
-                                    receiver_SGLN:data.receiverSgln,
-                                    receiver_street_addr1:data.receiverStreetAddressOne,
-                                    receiver_street_addr2:data.receiverStreetAddressTwo,
-                                    receiver_city:data.receiverCity,
-                                    receiver_state:data.receiverState,
-                                    receiver_postalCode:data.receiverCountryCode,
-                                    receiver_countryCode:data.receiverCountryCode,
-                                    receiver_loc_name:data.receiverLocationName,
-                                    receiver_loc_street_addr1:data.receiverLocationAddressOne,
-                                    receiver_loc_street_addr2:data.receiverLocationAddressTwo,
-                                    receiver_loc_city:data.receiverLocationCity,
-                                    receiver_loc_state:data.receiverLocationState,
-                                    receiver_loc_postalCode:data.receiverLocationPostalCode,
-                                    receiver_loc_countryCode:data.receiverLocationCountryCode,
+                                    receiver_name: data.receiverName,
+                                    receiver_SGLN: data.receiverSgln,
+                                    receiver_street_addr1: data.receiverStreetAddressOne,
+                                    receiver_street_addr2: data.receiverStreetAddressTwo,
+                                    receiver_city: data.receiverCity,
+                                    receiver_state: data.receiverState,
+                                    receiver_postalCode: data.receiverCountryCode,
+                                    receiver_countryCode: data.receiverCountryCode,
+                                    receiver_loc_name: data.receiverLocationName,
+                                    receiver_loc_street_addr1: data.receiverLocationAddressOne,
+                                    receiver_loc_street_addr2: data.receiverLocationAddressTwo,
+                                    receiver_loc_city: data.receiverLocationCity,
+                                    receiver_loc_state: data.receiverLocationState,
+                                    receiver_loc_postalCode: data.receiverLocationPostalCode,
+                                    receiver_loc_countryCode: data.receiverLocationCountryCode,
 
                                 }
                                 const existingItem = info.trans_hist.find(item => item.sgtin === data_to_push.sgtin && item.ndc === data_to_push.ndc);
@@ -849,10 +770,10 @@ define(['N/log', 'N/search', 'N/record', 'N/format', 'N/query', 'N/runtime'],
 
                     })
                 });
-               
-                
 
 
+
+            
 
                 return aux;
 

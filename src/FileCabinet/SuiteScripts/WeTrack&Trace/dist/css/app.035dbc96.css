@@ -1,71 +1,71 @@
 @import url(https://fonts.googleapis.com/css2?family=Roboto&display=swap);
 
-.subMenuOpen[data-v-6d27046e],
-a[data-v-6d27046e] {
-    text-decoration: none !important;
-    color: #fff !important
+td,
+th {
+    text-align: center !important
 }
 
-.subMenuOpen[data-v-6d27046e] {
-    display: block;
-    position: relative;
-    border-radius: 3px;
-    cursor: pointer
+#datatable_purchase_receipts_length label {
+    display: none
 }
 
-.subMenuOpen[data-v-6d27046e]:hover {
-    border-color: #fff;
-    background-color: #3b3b3b
+.btn {
+    border-radius: 3px !important
 }
 
-.subMenuOpen:hover .item .title a[data-v-6d27046e] {
-    color: #f5f5f5
+.paginate_button {
+    background-color: transparent !important
 }
 
-.subtitle[data-v-6d27046e] {
-    padding-bottom: 10px;
-    font-size: 16px
+.paginate_button.current {
+    background: transparent !important;
+    background-color: transparent !important;
+    border: 0 !important;
+    border-bottom: 3px solid #077cab !important
 }
 
-.subtitle a[data-v-6d27046e] {
-    text-decoration: none;
-    color: #009f6d
+.paginate_button:hover {
+    background: transparent !important;
+    border: 0 !important
 }
 
-.subtitle a[data-v-6d27046e]:hover {
-    color: #1a1a1a
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+    background-color: #077cab !important;
+    font-weight: 500 !important
 }
 
-.menuItemHeader[data-v-6d27046e] {
-    margin-left: 0
+.dataTables_wrapper .dataTables_paginate {
+    font-size: .9rem !important
 }
 
-.item[data-v-6d27046e] {
-    display: flex;
-    align-items: center;
-    padding: 10px;
-    padding-left: 5px;
-    padding-right: 5px;
-    gap: 2px;
-    margin-bottom: 10px;
-    font-size: 16px
+.table.dataTable {
+    width: 100% !important
 }
 
-.item .icon[data-v-6d27046e] {
-    margin-left: 20px;
-    display: flex;
-    justify-content: center
+th {
+    color: #077cab !important;
+    vertical-align: text-bottom !important
 }
 
-.collapsed .item .icon[data-v-6d27046e] {
-    margin: auto;
-    display: flex;
-    justify-content: center
+#Datatable-component>div {
+    text-align: left !important
 }
 
-.title a[data-v-6d27046e] {
-    text-decoration: none;
-    color: #fff
+#Datatable-component>div #datatableComp_wrapper {
+    text-align: center !important
+}
+
+.dragArea[data-v-7cde1df2] {
+    min-height: 50px;
+    box-shadow: 0 .5px 1px 1px rgba(0, 0, 0, .1) !important;
+    transition: .3s !important;
+    border-radius: 3px !important;
+    border: 2px !important;
+    border-color: red !important
+}
+
+pre[data-v-9393b93a] {
+    text-align: start
 }
 
 body,
@@ -310,57 +310,209 @@ a {
     color: #1d2228 !important
 }
 
-td,
-th {
-    text-align: center !important
+.wrapper-stepper {
+    padding-bottom: 20px;
+    padding-top: 20px;
+    border-radius: 32px;
+    margin-bottom: 20px;
+    width: 100%;
+    height: 100%;
+    transition: width .5s
 }
 
-#datatable_purchase_receipts_length label {
-    display: none
+.stepper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 860px;
+    position: relative;
+    z-index: 0;
+    margin-bottom: 24px;
+    margin: auto
+}
+
+.stepper-progress {
+    position: absolute;
+    background-color: #e5e6eb;
+    height: 2px;
+    z-index: -1;
+    left: 9px;
+    right: 2px;
+    margin: 0 auto
+}
+
+.stepper-progress-bar {
+    position: absolute;
+    left: 0;
+    height: 100%;
+    width: 65%;
+    background-color: #0259c2;
+    transition: .5s
+}
+
+.stepper-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: #c0c2ce;
+    transition: .5s
+}
+
+.stepper-item-counter {
+    height: 35px;
+    width: 35px;
+    display: grid;
+    place-items: center;
+    background-color: #e5e6eb;
+    border-radius: 100%;
+    border: 2px solid #e5e6eb;
+    position: relative
+}
+
+.stepper-item-counter .icon-success {
+    position: absolute;
+    opacity: 0;
+    transform: scale(0);
+    width: 24px;
+    transition: .5s
+}
+
+.stepper-item-counter .number {
+    font-size: 17px;
+    transition: .5s;
+    position: absolute;
+    bottom: 2px
+}
+
+.stepper-item-title {
+    position: absolute;
+    font-size: 14px;
+    bottom: -40px;
+    color: #c0c2ce
+}
+
+@media(max-width:600px) {
+    .stepper-item-title {
+        display: none
+    }
+}
+
+.stepper-item.success .stepper-item-counter {
+    border-color: #0259c2;
+    background-color: #52bf90;
+    color: #fff;
+    font-weight: 600
+}
+
+.stepper-item.success .stepper-item-counter .icon-success {
+    opacity: 1;
+    transform: scale(1.9)
+}
+
+.stepper-item.success .stepper-item-counter .number {
+    opacity: 0;
+    transform: scale(0)
+}
+
+.stepper-item.success .stepper-item-title {
+    color: #0259c2;
+    font-size: 16px;
+    font-weight: 400
+}
+
+.stepper-item.current .stepper-item-counter {
+    border-color: #0259c2;
+    background-color: #0259c2;
+    color: #fff;
+    font-weight: 600
+}
+
+.stepper-item.current .stepper-item-title {
+    color: #0259c2;
+    font-size: 16px;
+    font-weight: 500
+}
+
+.stepper-item-title {
+    font-size: 16px;
+    font-weight: 400
+}
+
+.stepper-pane {
+    color: #333;
+    margin-top: 30px
+}
+
+.controls {
+    display: flex;
+    margin-top: 30px;
+    justify-content: end;
+    align-items: flex-end
 }
 
 .btn {
-    border-radius: 3px !important
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 6px 16px;
+    border: 1px solid;
+    text-align: center;
+    vertical-align: middle;
+    cursor: pointer;
+    line-height: 1.5;
+    transition: all .15s;
+    border-radius: 4px;
+    width: -moz-fit-content;
+    width: fit-content;
+    font-size: .85rem;
+    color: #1a1a1a;
+    background-color: #c0c2ce;
+    border-color: #c0c2ce
 }
 
-.paginate_button {
-    background-color: transparent !important
+.btn:disabled {
+    opacity: .5;
+    pointer-events: none
 }
 
-.paginate_button.current {
-    background: transparent !important;
-    background-color: transparent !important;
-    border: 0 !important;
-    border-bottom: 3px solid #077cab !important
+.btn--green-1 {
+    background-color: #0259c2;
+    border-color: #0259c2;
+    color: #fff;
+    margin-left: auto
 }
 
-.paginate_button:hover {
-    background: transparent !important;
-    border: 0 !important
+.btn--yellow-1 {
+    background-color: #fbd950;
+    border-color: #fbd950
 }
 
-.dataTables_wrapper .dataTables_paginate .paginate_button:hover {
-    background-color: #077cab !important;
-    font-weight: 500 !important
+.btn--gray-1 {
+    background-color: transparent;
+    border-color: transparent
 }
 
-.dataTables_wrapper .dataTables_paginate {
-    font-size: .9rem !important
+.btn--gray-1:hover {
+    box-shadow: 0 2px 8px 0 rgba(99, 99, 99, .2);
+    color: #0259c2
 }
 
-.table.dataTable {
-    width: 100% !important
+.btn-back {
+    height: 20px
 }
 
-th {
-    color: #077cab !important;
-    vertical-align: text-bottom !important
+.green-btn {
+    background-color: #52bf90 !important;
+    border-color: #52bf90 !important
 }
 
-#Datatable-component>div {
-    text-align: left !important
+.green-btn:active,
+.green-btn:focus {
+    background-color: #45a57c !important;
+    border-color: #45a57c !important
 }
 
-#Datatable-component>div #datatableComp_wrapper {
-    text-align: center !important
+.gray-button {
+    background-color: #c0c2ce !important;
+    border-color: #c0c2ce !important
 }

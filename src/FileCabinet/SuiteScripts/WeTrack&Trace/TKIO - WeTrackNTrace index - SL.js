@@ -16,7 +16,7 @@ define(['N/search', 'N/ui/serverWidget'],
             try {
                 let request = scriptContext.request, response = scriptContext.response, params = request.parameters;
                 let form = serverWidget.createForm({
-                    title: "We Track & Trace",
+                    title: "SuiteTrace",
                     hideNavBar: false
                 });
                 let html_fld = form.addField({
@@ -51,13 +51,13 @@ define(['N/search', 'N/ui/serverWidget'],
                     + '<meta name="viewport" content="width=device-width,initial-scale=1">'
                     + '<link rel="icon" href="/favicon.ico">'
                     + '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">'
-                    + '<title>mxplus_vue_ns</title>'
+                    + '<title>SuiteTrace</title>'
                     + '<script defer="defer" src="' + chunkFile + '"></script>'
                     + '<script defer="defer" src="' + appJSFile + '"></script>'
                     + '<link href="' + cssFile + '" rel="stylesheet">'
                     + '<link href="' + chunkCssFile + '" rel="stylesheet">'
                     + '</head>'
-                    + '<body><noscript><strong>We are sorry but mxplus_vue_ns does not work properly without JavaScript enabled. Please enable it'
+                    + '<body><noscript><strong>We are sorry but suitetrace does not work properly without JavaScript enabled. Please enable it'
                     + 'to continue.</strong></noscript>'
                     + '<div id="app"></div>'
                     + '</body>'
