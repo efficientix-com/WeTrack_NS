@@ -1,15 +1,19 @@
 /**
  * @NApiVersion 2.1
  * @NScriptType Suitelet
- */
-/**
  * @name TKIO - WeTrackNTrace service - SL
  * @version 1.0
  * @author Magdiel Jiménez <magdiel.jimenez@freebug.mx>
  * @summary Script de backend para producto de WeTrackNTrace de Healix
+ * @copyright Tekiio México 2023
+ * 
+ * Client              -> Tekiio
+ * Last modification   -> 04/09/2023
+ * Modified by         -> Dylan Mendoza <dylan.mendoza@freebug.mx>
+ * Script in NS        -> TKIO - WeTrackNTrace service - SL <customscript_tkio_wetrackntrace_serv_sl>
  */
-define(['N/log', 'N/search', 'N/record', 'N/format', 'N/query', 'N/runtime'],
-    (log, search, record, format, query, runtime) => {
+define(['N/log', 'N/search', 'N/record', 'N/format', 'N/query', 'N/runtime', './Netsuite_Lib/Enum/TKIO - Const Lib'],
+    (log, search, record, format, query, runtime, constLib) => {
         /**
          * Defines the Suitelet script trigger point.
          * @param {Object} scriptContext
@@ -22,15 +26,31 @@ define(['N/log', 'N/search', 'N/record', 'N/format', 'N/query', 'N/runtime'],
         const SEARCH_TYPE_VENDORS = 'vendor';
         const SEARCH_TYPE = 'transaction';
         const CUSTOM_RECORD_ID = 'customrecord_tkio_transactionhistory';
+        const { RECORDS } = constLib;
 
         const onRequest = (scriptContext) => {
             let response = scriptContext.response, request = scriptContext.request, params = request.parameters;
             try {
-                // log.debug({
-                //     title: "Params received",
-                //     details: params
-                // });
+                log.debug({
+                    title: "Params received",
+                    details: params
+                });
+                log.debug({ title:'Records', details:RECORDS });
                 // track_query();
+                if (params.action) {
+                    switch (params.action) {
+                        case 'searchTransaction':
+                            let searchTransaction_response = search_transaction_items(params.transaction);
+                            log.debug({ title:'searchTransaction_response', details:searchTransaction_response });
+                            if (searchTransaction_response.success == false) {
+                                throw searchTransaction_response.error;
+                            }
+                            response.write({
+                                output: JSON.stringify(searchTransaction_response.data)
+                            });
+                            break;
+                    }
+                }
                 if (params.getTrackSearch) {
                     // let track_results = track_query2();
                     let track_results = search3ts();
@@ -131,6 +151,66 @@ define(['N/log', 'N/search', 'N/record', 'N/format', 'N/query', 'N/runtime'],
                     details: err
                 });
             }
+        }
+
+        const search_transaction_items = (idTrans) =>{
+            const response = {success: false, error: '', data:[]}
+            try {
+                const { TRANSACTIONS } = RECORDS;
+                const { PURCHASE_ORDER } = TRANSACTIONS
+                log.debug({ title:'searchTransaction', details:idTrans });
+                log.debug({ title:'purchase_order', details:PURCHASE_ORDER });
+                let columnsSearch = Object.values(PURCHASE_ORDER).map(x => {
+                    return { name: x }
+                });
+                columnsSearch.push(search.createColumn({
+                    name: "displayname",
+                    join: "item"
+                 })
+                );
+                const purchaseOrderSearch = search.create({
+                    type: search.Type.PURCHASE_ORDER,
+                    filters:
+                    [
+                        [PURCHASE_ORDER.INTERNAL_ID, search.Operator.ANYOF, idTrans],
+                        "AND",
+                        ['mainline', search.Operator.IS ,"F"],
+                    ],
+                    columns: columnsSearch
+                });
+                const poResult = purchaseOrderSearch.runPaged({
+                    pageSize: 1000
+                });
+                log.debug({ title:'poResult', details:poResult.count });
+                let poResultValues = [];
+                if (poResult.count > 0) {
+                    poResult.pageRanges.forEach(function (pageRange) {
+                        const myPage = poResult.fetch({ index: pageRange.index })
+                        myPage.data.forEach(function (result) {
+                            let poResultValue = {};
+                            Object.entries(PURCHASE_ORDER).forEach(([key, value]) => {
+                                poResultValue[value] = result.getValue({ name: value })
+                            });
+                            poResultValue['item_ndc'] = result.getText({ name: PURCHASE_ORDER.ITEM })
+                            poResultValue['item_name'] = result.getValue({ 
+                                name: "displayname",
+                                join: "item",
+                            });
+                            poResultValues.push(poResultValue);
+                        });
+                    });
+                    log.debug({ title:'poResultValues', details:poResultValues });
+                    response.success = true;
+                    response.data = poResultValues
+                }else{
+                    throw 'The entered transaction is not valid.'
+                }
+            } catch (error) {
+                log.error({ title:'search_transaction_items', details:error });
+                response.success = false;
+                response.error = error;
+            }
+            return response;
         }
 
         const search_for_tracing = (search_id, search_type) => {
