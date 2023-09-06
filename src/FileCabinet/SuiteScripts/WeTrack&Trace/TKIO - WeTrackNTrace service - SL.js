@@ -238,7 +238,10 @@ define(['N/log', 'N/search', 'N/record', 'N/format', 'N/query', 'N/runtime', './
                             Object.entries(PURCHASE_ORDER).forEach(([key, value]) => {
                                 poResultValue[value] = result.getValue({ name: value })
                             });
-                            poResultValue['item_ndc'] = result.getText({ name: PURCHASE_ORDER.ITEM })
+                            poResultValue['item_ndc'] = result.getText({ name: PURCHASE_ORDER.ITEM });
+                            poResultValue['lot'] = '';
+                            poResultValue['scanned_quantity'] = 0;
+                            poResultValue['missing'] = result.getValue({ name: PURCHASE_ORDER.QUANTITY });
                             poResultValue['item_name'] = result.getValue({ 
                                 name: "displayname",
                                 join: "item",
