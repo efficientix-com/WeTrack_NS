@@ -8,7 +8,7 @@
  * @copyright Tekiio México 2023
  * 
  * Client              -> Tekiio
- * Last modification   -> 04/09/2023
+ * Last modification   -> 06/09/2023
  * Modified by         -> Dylan Mendoza <dylan.mendoza@freebug.mx>
  * Script in NS        -> TKIO - WeTrackNTrace service - SL <customscript_tkio_wetrackntrace_serv_sl>
  */
@@ -48,6 +48,17 @@ define(['N/log', 'N/search', 'N/record', 'N/format', 'N/query', 'N/runtime', './
                             response.write({
                                 output: JSON.stringify(searchTransaction_response.data)
                             });
+                            break;
+                        case 'getUserInfo':
+                            let userObjCurrent = runtime.getCurrentUser();
+                            log.debug({ title:'userObjcurrent', details:userObjCurrent });
+                            let userResponse = search_user_info(userObjCurrent);
+                            log.debug({ title:'userresponse', details:userResponse });
+                            if (userResponse.success == true) {
+                                response.write({
+                                    output: JSON.stringify(userResponse.data)
+                                });
+                            }
                             break;
                     }
                 }
@@ -151,6 +162,42 @@ define(['N/log', 'N/search', 'N/record', 'N/format', 'N/query', 'N/runtime', './
                     details: err
                 });
             }
+        }
+
+        function search_user_info(user) {
+            const response = {success: false, error: '', data: {}};
+            try {
+                log.debug({ title:'inicio user info', details:user });
+                let userObjInfo = {};
+                let infoUser = search.lookupFields({
+                   type: search.Type.EMPLOYEE,
+                   id: user.id,
+                   columns: ['altname', 'image', 'role']
+                });
+                log.debug({ title:'infoUser', details:infoUser });
+                if (infoUser.altname) {
+                    userObjInfo['user_name'] = infoUser.altname
+                }else{
+                    userObjInfo['user_name'] = 'NO USER NAME'
+                }
+                if (infoUser.image.length) {
+                    userObjInfo['image_url'] = 'https://7076975-sb1.app.netsuite.com' + infoUser.image[0].text;
+                }else{
+                    userObjInfo['image_url'] = 'https://firebasestorage.googleapis.com/v0/b/bloona-55051.appspot.com/o/alexander-hipp-iEEBWgY_6lA-unsplash.jpg?alt=media&token=00f5cae5-004a-49e6-a3bb-bda977ee0121';
+                }
+                if (infoUser.role.length) {
+                    userObjInfo['role'] = infoUser.role[0].text;
+                }else{
+                    userObjInfo['role'] = 'undefined';
+                }
+                log.debug({ title:'userObjInfo', details:userObjInfo });
+                response.success = true;
+                response.data = userObjInfo;
+            } catch (error) {
+                log.error({ title:'search_user_info', details:error });
+                response.error = error;
+            }
+            return response;
         }
 
         const search_transaction_items = (idTrans) =>{
