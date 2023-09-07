@@ -39,12 +39,13 @@ define(['N/log'],
                     var typeTransaction = objRecord.type;
                     var form = scriptContext.form;
                     log.audit('type transaction', typeTransaction);
+                    log.debug({ title:'idTransaction', details:objRecord.id });
                     form.addButton({
                         id: 'custpage_fb_st_btn_scan_po',
                         label: 'Scan and Receive',
-                        // functionName: 'renderButton(' + templateID + ',"' + typeTransaction + '",'+ objRecord.id +')'
+                        functionName: 'sendToScan("' + typeTransaction + '",'+ objRecord.id +')'
                     });
-                    // form.clientScriptModulePath = './efx_pdf_by_tran_cs.js';
+                    form.clientScriptModulePath = './FB-ST_button_scan_CS.js';
                 }
             } catch (e) {
                 log.error('Error on before load', e);
