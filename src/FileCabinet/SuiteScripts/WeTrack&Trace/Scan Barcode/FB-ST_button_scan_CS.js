@@ -2,12 +2,22 @@
  * @NApiVersion 2.1
  * @NScriptType ClientScript
  * @NModuleScope SameAccount
+ * @name FB-ST_button_scan_CS
+ * @version 1.0
+ * @author Dylan Mendoza <dylan.mendoza@freebug.mx>
+ * @summary Script para capturar los eventos del usuario y disparar la interfaz de escaneo
+ * @copyright Tekiio México 2023
+ * 
+ * Client              -> Tekiio
+ * Last modification   -> 07/09/2023
+ * Modified by         -> Dylan Mendoza <dylan.mendoza@freebug.mx>
+ * Script in NS        -> N/A <N/A>
  */
-define(['N/log'],
+define(['N/log', 'N/url'],
 /**
  * @param{log} log
  */
-function(log) {
+function(log, url) {
     
     /**
      * Function to be executed after page is initialized.
@@ -157,6 +167,18 @@ function(log) {
     function sendToScan(typeTrans, idTrans) {
         try {
             console.log('Datos received: ', {typeTrans: typeTrans, idTrans: idTrans});
+            let protocol = 'https://'
+            let domain = url.resolveDomain({
+                hostType: url.HostType.APPLICATION
+            });
+            let portal = url.resolveScript({
+                scriptId: 'customscript_tkio_wetrackntrace_index_sl',
+                deploymentId: 'customdeploy_tkio_wetrackntrace_index_sl'
+            });
+            let directionVue = '&whence=#/scan-transaction?transaction=' + idTrans;
+            let urlPortal = protocol+domain+portal+directionVue;
+            console.log('urlPortal: ' + urlPortal);
+            window.open(urlPortal, '_self');
         } catch (error) {
             console.error('sendToScan', error);
         }
