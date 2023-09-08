@@ -29,7 +29,9 @@ define(['N/log', 'N/search', 'N/record', 'N/format', 'N/query', 'N/runtime', './
         const { RECORDS } = constLib;
 
         const onRequest = (scriptContext) => {
-            let response = scriptContext.response, request = scriptContext.request, params = request.parameters;
+            var response = scriptContext.response;
+            const request = scriptContext.request; 
+            let params = request.parameters;
             try {
                 log.debug({
                     title: "Params received",
@@ -60,108 +62,141 @@ define(['N/log', 'N/search', 'N/record', 'N/format', 'N/query', 'N/runtime', './
                                 });
                             }
                             break;
+                        case 'createReceipt':
+                            const receiptData = JSON.parse(request.body)
+                            let createReceipt_result = createReceipt(receiptData);
+                            log.debug({ title:'createReceipt_Result', details:createReceipt_result });
+                            response.write({
+                                output: JSON.stringify(createReceipt_result)
+                            });
+                            break;
                     }
-                }
-                if (params.getTrackSearch) {
-                    // let track_results = track_query2();
-                    let track_results = search3ts();
-                    log.emergency({
-                        title: "TRACK RESULTS",
-                        details: track_results
+                }else{
+                    if (params.getTrackSearch) {
+                        // let track_results = track_query2();
+                        let track_results = search3ts();
+                        log.emergency({
+                            title: "TRACK RESULTS",
+                            details: track_results
+                        })
+                        response.write({
+                            output: JSON.stringify(track_results)
+                        });
+    
+                    }
+                    if (params.getSearchVendors) {
+                        var scriptObj = runtime.getCurrentScript();
+                        var script_parameters = scriptObj.getParameter({ name: 'custscript_tkio_wetrack_configuration' });
+                        log.debug({
+                            title: "script_parameters",
+                            details: script_parameters
+                        });
+                        if (script_parameters) {
+                            let resVWC = JSON.stringify(searchVendorsByCategory(script_parameters));
+                            log.debug({
+                                title: "resVWC",
+                                details: resVWC
+                            });
+                            response.write({
+                                output: resVWC
+                            });
+    
+                        } else {
+                            log.error({
+                                title: "Parameter is empty",
+                                details: "Fill out the parameters of the script"
+                            });
+                        }
+                    }
+                    log.debug({
+                        title: "here",
+                        details: "Passed"
                     })
-                    response.write({
-                        output: JSON.stringify(track_results)
-                    });
-
-                }
-                if (params.getSearchVendors) {
-                    var scriptObj = runtime.getCurrentScript();
-                    var script_parameters = scriptObj.getParameter({ name: 'custscript_tkio_wetrack_configuration' });
-                    log.debug({
-                        title: "script_parameters",
-                        details: script_parameters
-                    });
-                    if (script_parameters) {
-                        let resVWC = JSON.stringify(searchVendorsByCategory(script_parameters));
-                        log.debug({
-                            title: "resVWC",
-                            details: resVWC
-                        });
+                    if(params.getItems){
+                        var res_data=searchItems();
+                        const cast_res_data=JSON.stringify(res_data);
                         response.write({
-                            output: resVWC
-                        });
-
-                    } else {
-                        log.error({
-                            title: "Parameter is empty",
-                            details: "Fill out the parameters of the script"
+                            output:cast_res_data
                         });
                     }
-                }
-                log.debug({
-                    title: "here",
-                    details: "Passed"
-                })
-                if(params.getItems){
-                    var res_data=searchItems();
-                    const cast_res_data=JSON.stringify(res_data);
-                    response.write({
-                        output:cast_res_data
-                    });
-                }
-                if (params.getSearchTracing) {
-                    var result_data = track_query();
-                    log.debug({
-                        title: "result_data",
-                        details: result_data
-                    });
-                    const objResultData = JSON.stringify(result_data);
-                    // var result_data = search_for_tracing(SEARCH_ID, SEARCH_TYPE);
-                    // const objResultData = JSON.stringify(result_data);
-                    response.write({
-                        output: objResultData
-                    });
-                }
-                if (request.method === 'POST') {
-                    log.debug({
-                        title: "request",
-                        details: typeof request.body
-                    });
-                    let sendTrackBody_aux = JSON.parse(request.body)
-                    log.debug({
-                        title: "sendTrackBody_aux",
-                        details: sendTrackBody_aux
-                    });
-
-                    new_registry_track(sendTrackBody_aux.sendTrackBody).then(resp => {
+                    if (params.getSearchTracing) {
+                        var result_data = track_query();
                         log.debug({
-                            title: "response_newTRackRegistry",
-                            details: resp
+                            title: "result_data",
+                            details: result_data
                         });
+                        const objResultData = JSON.stringify(result_data);
+                        // var result_data = search_for_tracing(SEARCH_ID, SEARCH_TYPE);
+                        // const objResultData = JSON.stringify(result_data);
                         response.write({
-                            output: resp + ''
+                            output: objResultData
                         });
-                    });
+                    }
+                    if (request.method === 'POST') {
+                        log.debug({
+                            title: "request",
+                            details: typeof request.body
+                        });
+                        let sendTrackBody_aux = JSON.parse(request.body)
+                        log.debug({
+                            title: "sendTrackBody_aux",
+                            details: sendTrackBody_aux
+                        });
+    
+                        new_registry_track(sendTrackBody_aux.sendTrackBody).then(resp => {
+                            log.debug({
+                                title: "response_newTRackRegistry",
+                                details: resp
+                            });
+                            response.write({
+                                output: resp + ''
+                            });
+                        });
+                        // }
+                    }
+                    // if (params.getSearchVendors) {
+                    //     // Get Search results from vendor
+                    //     var result_data_vendors = search_for_tracing(SEARCH_ID_VENDORS, SEARCH_TYPE_VENDORS);
+                    //     const objResultData_vendors = JSON.stringify(result_data_vendors);
+                    //     log.debug({
+                    //         title: "objResultData_vendors",
+                    //         details: objResultData_vendors
+                    //     });
+                    //     response.write({
+                    //         output: objResultData_vendors
+                    //     });
                     // }
                 }
-                // if (params.getSearchVendors) {
-                //     // Get Search results from vendor
-                //     var result_data_vendors = search_for_tracing(SEARCH_ID_VENDORS, SEARCH_TYPE_VENDORS);
-                //     const objResultData_vendors = JSON.stringify(result_data_vendors);
-                //     log.debug({
-                //         title: "objResultData_vendors",
-                //         details: objResultData_vendors
-                //     });
-                //     response.write({
-                //         output: objResultData_vendors
-                //     });
-                // }
             } catch (err) {
                 log.error({
                     title: "Error occurrred on onRequest",
                     details: err
                 });
             }
+        }
+
+        function createReceipt(receiptData) {
+            const response = {success: false, error: '', userError: '', idReceipt:''};
+            try {
+                log.debug({ title:'createReceipt_receiptData', details:receiptData });
+                let dataFilter = [];
+                { // filter information
+                    receiptData.forEach((lineItem, index) => {
+                        if (lineItem.scanned_quantity != 0) {
+                            log.debug({ title:'lineItem: ' + index, details:lineItem });
+                        }
+                    });
+                    if (dataFilter.length <= 0) {
+                        response.userError = 'Capture information to create your reception.'
+                        throw 'UserError';
+                    }
+                }
+            } catch (error) {
+                log.error({ title:'createReceipt', details:error });
+                response.success = false;
+                response.error = error;
+            }
+            return response;
         }
 
         function search_user_info(user) {
@@ -241,7 +276,7 @@ define(['N/log', 'N/search', 'N/record', 'N/format', 'N/query', 'N/runtime', './
                             poResultValue['item_ndc'] = result.getText({ name: PURCHASE_ORDER.ITEM });
                             poResultValue['lot'] = '';
                             poResultValue['scanned_quantity'] = 0;
-                            poResultValue['missing'] = result.getValue({ name: PURCHASE_ORDER.QUANTITY });
+                            poResultValue['missing'] = (poResultValue[PURCHASE_ORDER.QUANTITYUOM]*1) - (poResultValue[PURCHASE_ORDER.QUANTITY_RECEIVED]*1);
                             poResultValue['item_name'] = result.getValue({ 
                                 name: "displayname",
                                 join: "item",
