@@ -8,12 +8,12 @@
  * @copyright Tekiio México 2023
  * 
  * Client              -> Tekiio
- * Last modification   -> 06/09/2023
+ * Last modification   -> 11/09/2023
  * Modified by         -> Dylan Mendoza <dylan.mendoza@freebug.mx>
  * Script in NS        -> TKIO - WeTrackNTrace service - SL <customscript_tkio_wetrackntrace_serv_sl>
  */
-define(['N/log', 'N/search', 'N/record', 'N/format', 'N/query', 'N/runtime', './Netsuite_Lib/Enum/TKIO - Const Lib'],
-    (log, search, record, format, query, runtime, constLib) => {
+define(['N/config', 'N/url', 'N/log', 'N/search', 'N/record', 'N/format', 'N/query', 'N/runtime', './Netsuite_Lib/Enum/TKIO - Const Lib', './Netsuite_Lib/Mod/SuiteTrace_moment'],
+    (config, url, log, search, record, format, query, runtime, constLib, moment) => {
         /**
          * Defines the Suitelet script trigger point.
          * @param {Object} scriptContext
@@ -176,19 +176,165 @@ define(['N/log', 'N/search', 'N/record', 'N/format', 'N/query', 'N/runtime', './
         }
 
         function createReceipt(receiptData) {
-            const response = {success: false, error: '', userError: '', idReceipt:''};
+            const response = {success: false, error: '', userError: '', idReceipt:'', urlReceipt: ''};
             try {
                 log.debug({ title:'createReceipt_receiptData', details:receiptData });
                 let dataFilter = [];
+                let poId = '';
+                let itemReceipt_date;
+                let localDate;
+                { // get company information
+                    const companyInfo = config.load({ type: config.Type.COMPANY_PREFERENCES });
+                    localDate = companyInfo.getValue({ fieldId: 'DATEFORMAT' });
+                }
                 { // filter information
                     receiptData.forEach((lineItem, index) => {
                         if (lineItem.scanned_quantity != 0) {
+                            let itemData = {};
                             log.debug({ title:'lineItem: ' + index, details:lineItem });
+                            lineItem.lot = lineItem.lot +'';
+                            let lotes = lineItem.lot.split('<br/>');
+                            lineItem.scanned_quantity = lineItem.scanned_quantity +'';
+                            let cantidades = lineItem.scanned_quantity.split('<br/>');
+                            lineItem.expiration_date=lineItem.expiration_date+'';
+                            let fechas = lineItem.expiration_date.split('<br/>');
+                            log.debug({ title:'datos found', details:{lotes: lotes, cantidades: cantidades, fechas: fechas} });
+                            let cantidadsum = 0;
+                            let lotDistribucion = [];
+                            cantidades.forEach((element, index) => {
+                                cantidadsum = cantidadsum + (element*1);
+                                let lotEntered = lotDistribucion.findIndex(element => element.lot == lotes[index]);
+                                log.debug({ title:'lotEntered', details:lotEntered });
+                                if (lotEntered == -1) {
+                                    lotDistribucion.push({lot: lotes[index], cantidad: (element*1), expiracion: fechas[index]});
+                                }else{
+                                    lotDistribucion[lotEntered].cantidad = (lotDistribucion[lotEntered].cantidad*1) + (element*1);
+                                }
+                            });
+                            poId = lineItem.internalid;
+                            itemData['item'] = lineItem.item;
+                            itemData['quantity'] = cantidadsum
+                            itemData['lot_information'] = lotDistribucion;
+                            dataFilter.push(itemData);
                         }
                     });
+                    log.debug({ title:'dataFilter', details:dataFilter });
                     if (dataFilter.length <= 0) {
                         response.userError = 'Capture information to create your reception.'
                         throw 'UserError';
+                    }
+                    itemReceipt_date = moment();
+                    // log.debug({ title:'itemReceipt_date', details:{itemReceipt_date: itemReceipt_date, itemReceipt_type: typeof itemReceipt_date} });
+                }
+                { // create Item Receipt
+                    log.audit({ title:'Creating receipt', details:'Creating...' });
+                    const itemReceipt_New = record.transform({
+                        fromType: record.Type.PURCHASE_ORDER,
+                        fromId: poId,
+                        toType: record.Type.ITEM_RECEIPT,
+                        isDynamic: true,
+                    });
+                    //  TODO: soventar que se agrege la fecha actual
+                    // itemReceipt_New.setValue({
+                    //     fieldId: 'trandate',
+                    //     value: itemReceipt_date
+                    // });
+                    let countItems = itemReceipt_New.getLineCount({
+                        sublistId: 'item'
+                    });
+                    for (let itemLine = 0; itemLine < countItems; itemLine++) {
+                        var lineNum = itemReceipt_New.selectLine({
+                            sublistId: 'item',
+                            line: itemLine
+                        });
+                        var receiptItem = itemReceipt_New.getCurrentSublistValue({
+                            sublistId: 'item',
+                            fieldId: 'item'
+                        });
+                        let scanedItemFound = dataFilter.findIndex(element => element.item == receiptItem); // se busca si el articulo seleccionado se encuentre en la lista de articulos escaneados
+                        log.debug({ title:'scanedItemFound', details:scanedItemFound });
+                        if (scanedItemFound != -1) { // si el articulo seleccionado esta entre los articulos escaneados
+                            let info_scanned = dataFilter[scanedItemFound]; // se extrae l ainformación del articulo escaneado
+                            log.debug({ title:'info_scanned', details:info_scanned });
+                            itemReceipt_New.setCurrentSublistValue({
+                                sublistId: 'item',
+                                fieldId: 'itemreceive',
+                                value: true
+                            });
+                            itemReceipt_New.setCurrentSublistValue({
+                                sublistId: 'item',
+                                fieldId: 'quantity',
+                                value: info_scanned.quantity
+                            });
+                            const objSubrecord = itemReceipt_New.getCurrentSublistSubrecord({
+                                sublistId: 'item',
+                                fieldId: 'inventorydetail'
+                            });
+                            var totalLinesSub = objSubrecord.getLineCount({
+                                sublistId: 'inventoryassignment'
+                            });
+                            info_scanned.lot_information.forEach(lotDetail => {
+                                log.debug({ title:'lotDeatil: ' + totalLinesSub, details:lotDetail });
+                                objSubrecord.selectNewLine({
+                                    sublistId: 'inventoryassignment'
+                                });
+                                objSubrecord.setCurrentSublistValue({
+                                    sublistId: 'inventoryassignment',
+                                    fieldId: 'receiptinventorynumber',
+                                    value: lotDetail.lot
+                                });
+                                objSubrecord.setCurrentSublistValue({
+                                    sublistId: 'inventoryassignment',
+                                    fieldId: 'expirationdate',
+                                    value: formatDate(lotDetail.expiracion, localDate)
+                                });
+                                objSubrecord.setCurrentSublistValue({
+                                    sublistId: 'inventoryassignment',
+                                    fieldId: 'quantity',
+                                    value: lotDetail.cantidad*1
+                                });
+                                objSubrecord.commitLine({
+                                    sublistId: 'inventoryassignment'
+                                });
+                                totalLinesSub++;
+                            });
+                        }else{ // si el articulo no se escaneo se desmarca el check de receive
+                            itemReceipt_New.setCurrentSublistValue({
+                                sublistId: 'item',
+                                fieldId: 'itemreceive',
+                                value: false
+                            });
+                        }
+                        itemReceipt_New.commitLine({
+                            sublistId: 'item'
+                        });
+                    }
+                    let itemReceipt_Save = itemReceipt_New.save({
+                        enableSourcing: true,
+                        ignoreMandatoryFields: true
+                    });
+                    log.debug({ title:'itemReceipt_Save', details:itemReceipt_Save });
+                    if (itemReceipt_Save) {
+                        response.idReceipt = itemReceipt_Save;
+                    }
+                }
+                { // creación de url para redireccionamiento
+                    log.debug({ title:'responseResult', details:response });
+                    if (response.idReceipt) {
+                        let protocol = 'https://'
+                        let domain = url.resolveDomain({
+                            hostType: url.HostType.APPLICATION
+                        });
+                        let itemReceipt_url = url.resolveRecord({
+                            recordType: 'itemreceipt',
+                            recordId: response.idReceipt
+                        });
+                        let completeUrl = protocol+domain+itemReceipt_url;
+                        response.urlReceipt = completeUrl;
+                        response.success = true;
+                    }else{
+                        response.success = false;
+                        response.userError = 'Your transaction could not be created.'
                     }
                 }
             } catch (error) {
@@ -275,6 +421,7 @@ define(['N/log', 'N/search', 'N/record', 'N/format', 'N/query', 'N/runtime', './
                             });
                             poResultValue['item_ndc'] = result.getText({ name: PURCHASE_ORDER.ITEM });
                             poResultValue['lot'] = '';
+                            poResultValue['expiration_date'] = '';
                             poResultValue['scanned_quantity'] = 0;
                             poResultValue['missing'] = (poResultValue[PURCHASE_ORDER.QUANTITYUOM]*1) - (poResultValue[PURCHASE_ORDER.QUANTITY_RECEIVED]*1);
                             poResultValue['item_name'] = result.getValue({ 
@@ -1078,6 +1225,20 @@ define(['N/log', 'N/search', 'N/record', 'N/format', 'N/query', 'N/runtime', './
                     title: "Error occurred in searchVendorsByCategory",
                     details: err
                 });
+            }
+        }
+
+        const formatDate = (d, localFormat) => {
+            try {
+                // const localFormat = dateTime === true ? `${MAIN_CONFIG.format_date} HH:mm:ss` : MAIN_CONFIG.format_date
+                const newFormat = moment(d).format(localFormat);                
+                // if (newDate) {
+                    return new Date(newFormat)
+                // } else {
+                    // return newFormat
+                // }
+            } catch (err) {
+                log.error('Error on formatDate', err)
             }
         }
 
