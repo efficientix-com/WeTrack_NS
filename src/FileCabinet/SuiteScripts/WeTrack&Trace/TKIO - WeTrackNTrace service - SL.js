@@ -424,6 +424,7 @@ define(['N/config', 'N/url', 'N/log', 'N/search', 'N/record', 'N/format', 'N/que
                             poResultValue['expiration_date'] = '';
                             poResultValue['scanned_quantity'] = 0;
                             poResultValue['missing'] = (poResultValue[PURCHASE_ORDER.QUANTITYUOM]*1) - (poResultValue[PURCHASE_ORDER.QUANTITY_RECEIVED]*1);
+                            poResultValue['missingAux'] = (poResultValue[PURCHASE_ORDER.QUANTITYUOM]*1) - (poResultValue[PURCHASE_ORDER.QUANTITY_RECEIVED]*1);
                             poResultValue['item_name'] = result.getValue({ 
                                 name: "displayname",
                                 join: "item",
