@@ -1,0 +1,332 @@
+@import url(https://fonts.googleapis.com/css2?family=Roboto&display=swap);
+
+body,
+html {
+    height: 100%;
+    width: 100%;
+    margin: 0 !important;
+    font-family: Roboto, sans-serif
+}
+
+#app {
+    font-family: Segoe UI, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    color: #1d2228;
+    width: 100%;
+    position: fixed;
+    top: 90px;
+    bottom: 0;
+    left: 0;
+    overflow: auto;
+    overflow-y: auto;
+    font-size: .9rem !important
+}
+
+.uir-page-title {
+    display: none
+}
+
+#div__body,
+#main_form,
+.uir-header-buttons,
+div#innerwrapper div#div__body {
+    padding: 0 !important
+}
+
+#global {
+    grid-template-columns: 16rem 1fr;
+    grid-template-rows: 4rem 100%
+}
+
+#global,
+.topNavBarC {
+    display: grid !important
+}
+
+.topNavBarC {
+    background-color: #0259c2 !important;
+    grid-column: 1/3;
+    grid-row: 1/3
+}
+
+.sideNavBarC {
+    background-color: #fff !important;
+    grid-column: 1/2
+}
+
+.moduleComponent,
+.sideNavBarC {
+    display: grid !important;
+    grid-row: 2/3
+}
+
+.moduleComponent {
+    grid-column: 2/3;
+    background-color: #f4f6f9 !important
+}
+
+.userName {
+    font-size: 1.1rem !important
+}
+
+.userName,
+.userRole {
+    color: #969696;
+    font-weight: 400 !important
+}
+
+.userRole {
+    font-size: .9rem !important
+}
+
+div:has(.collapsed) .moduleComponent {
+    grid-column: 2/3;
+    grid-row: 2/3;
+    transition: .3s
+}
+
+div:has(.collapsed) .sideNavBarC {
+    grid-column: 1/2;
+    grid-row: 2/3;
+    transition: .3s
+}
+
+.card {
+    box-shadow: 0 0 1px 0 rgba(0, 0, 0, .1);
+    border: 0 !important;
+    transition: .3s !important;
+    border-radius: 3px !important;
+    width: 95%;
+    padding: 20px;
+    margin: auto;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    z-index: 1
+}
+
+div:has(.hide_bar) .moduleComponent {
+    grid-column: 1/3;
+    grid-row: 2/3;
+    transition: .3s
+}
+
+div:has(.hide_bar) .sideNavBarC {
+    grid-column: 1/1;
+    grid-row: 2/3;
+    transition: .3s
+}
+
+nav.navbar {
+    padding-top: 0 !important
+}
+
+.menuItem {
+    font-size: 1rem !important
+}
+
+.menuItem:hover {
+    cursor: pointer;
+    background-color: #0259c2;
+    color: #fff
+}
+
+.menuSubItem {
+    font-size: 1rem !important
+}
+
+.menuSubItem:hover,
+.menuSubItem:hover a {
+    cursor: pointer;
+    background-color: #0259c2;
+    color: #fff !important
+}
+
+a {
+    text-decoration: none !important;
+    color: #1d2228 !important
+}
+
+.blue-text {
+    color: #077cab !important
+}
+
+.modal-dialog {
+    margin-top: 150px !important;
+    border-radius: 1px !important;
+    font-size: .9rem !important
+}
+
+.modal-dialog button {
+    background-color: #f2f2f2 !important;
+    border: 0
+}
+
+.modal-dialog .modal-content {
+    border-radius: 3px !important
+}
+
+.modal-dialog .modal-header {
+    color: #077cab !important;
+    border-bottom: 0 !important;
+    padding-bottom: 0 !important
+}
+
+.modal-dialog .modal-header .close {
+    color: #969696 !important;
+    cursor: pointer !important
+}
+
+.modal-dialog .modal-body {
+    padding-top: 0 !important
+}
+
+.modal-dialog .headline {
+    background-color: #f4f6f9
+}
+
+.modal-dialog .success-color {
+    color: #2fb179 !important
+}
+
+.b-form-datepicker,
+select {
+    border-radius: 3px !important
+}
+
+h2,
+p {
+    text-align: left !important
+}
+
+.cheto {
+    background-color: #077cab;
+    color: #f2f2f2;
+    border-radius: 5px;
+    border-width: 2px;
+    border-color: #077cab;
+    padding-left: 10px;
+    padding-top: 0;
+    padding-bottom: 2px;
+    padding-right: 10px;
+    margin-right: 5px;
+    margin-top: 0;
+    margin-bottom: 0;
+    white-space: pre-line;
+    word-break: keep-all;
+    word-wrap: normal;
+    display: inline
+}
+
+#register_track_form input,
+#register_track_form select,
+#register_track_form textarea,
+input {
+    border-radius: 3px !important
+}
+
+#register_track_form .submit-button,
+.submit-button {
+    background-color: #077cab !important;
+    color: #f2f2f2 !important;
+    border-radius: 3px !important
+}
+
+.error-color {
+    color: #cb2424 !important
+}
+
+small {
+    font-size: .78rem !important
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    text-align: left !important
+}
+
+.btn_removeBKColor {
+    background-color: transparent !important;
+    border: 0 !important
+}
+
+#uif46,
+#uif47,
+#uif48,
+#uif70 {
+    background-color: #000 !important;
+    color: #fff !important
+}
+
+.n-w-menu-item-content__label {
+    color: #0259c2 !important
+}
+
+#uif70:active,
+#uif70:hover {
+    background-color: #fff !important;
+    color: #fff !important
+}
+
+.text-left {
+    text-align: left !important
+}
+
+td,
+th {
+    text-align: center !important
+}
+
+#datatable_purchase_receipts_length label {
+    display: none
+}
+
+.btn {
+    border-radius: 3px !important
+}
+
+.paginate_button {
+    background-color: transparent !important
+}
+
+.paginate_button.current {
+    background: transparent !important;
+    background-color: transparent !important;
+    border: 0 !important;
+    border-bottom: 3px solid #077cab !important
+}
+
+.paginate_button:hover {
+    background: transparent !important;
+    border: 0 !important
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+    background-color: #077cab !important;
+    font-weight: 500 !important
+}
+
+.dataTables_wrapper .dataTables_paginate {
+    font-size: .9rem !important
+}
+
+.table.dataTable {
+    width: 100% !important
+}
+
+th {
+    color: #077cab !important;
+    vertical-align: text-bottom !important
+}
+
+#Datatable-component>div {
+    text-align: left !important
+}
+
+#Datatable-component>div #datatableComp_wrapper {
+    text-align: center !important
+}

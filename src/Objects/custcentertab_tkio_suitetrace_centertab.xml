@@ -1,0 +1,9 @@
+<centertab scriptid="custcentertab_tkio_suitetrace_centertab">
+  <allcustomers>F</allcustomers>
+  <allemployees>F</allemployees>
+  <allroles>T</allroles>
+  <allvendors>F</allvendors>
+  <audslctrole></audslctrole>
+  <center>BASIC</center>
+  <label>SuiteTrace</label>
+</centertab>

@@ -1,0 +1,13 @@
+<centercategory scriptid="custcentercategory__tkio_suitetrace_category_portal">
+  <center>BASIC</center>
+  <centertab>[scriptid=custcentertab_tkio_suitetrace_centertab]</centertab>
+  <label>SuiteTrace Portal</label>
+  <links>
+    <link>
+      <linklabel>Access portal</linklabel>
+      <linkobject>[scriptid=customscript_tkio_wetrackntrace_index_sl.customdeploy_tkio_wetrackntrace_index_sl]</linkobject>
+      <linktasktype>SCRIPT</linktasktype>
+      <shortlist>F</shortlist>
+    </link>
+  </links>
+</centercategory>

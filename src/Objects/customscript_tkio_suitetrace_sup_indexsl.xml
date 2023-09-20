@@ -1,0 +1,25 @@
+<suitelet scriptid="customscript_tkio_suitetrace_sup_indexsl">
+  <description></description>
+  <isinactive>F</isinactive>
+  <name>TKIO - SuiteTrace Supplier index - SL</name>
+  <notifyadmins>F</notifyadmins>
+  <notifyemails></notifyemails>
+  <notifyowner>T</notifyowner>
+  <notifyuser>F</notifyuser>
+  <scriptfile>[/SuiteScripts/WeTrack&amp;Trace/TKIO - SuiteTrace Supplier Portal index - SL.js]</scriptfile>
+  <scriptdeployments>
+    <scriptdeployment scriptid="customdeploy_tkio_suitetrace_sup_indexsl">
+      <allemployees>T</allemployees>
+      <allpartners>F</allpartners>
+      <allroles>T</allroles>
+      <audslctrole></audslctrole>
+      <eventtype></eventtype>
+      <isdeployed>T</isdeployed>
+      <isonline>F</isonline>
+      <loglevel>DEBUG</loglevel>
+      <runasrole>ADMINISTRATOR</runasrole>
+      <status>RELEASED</status>
+      <title>TKIO - SuiteTrace Supplier index - SL</title>
+    </scriptdeployment>
+  </scriptdeployments>
+</suitelet>
