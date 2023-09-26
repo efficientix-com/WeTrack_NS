@@ -1,0 +1,13 @@
+<centercategory scriptid="custcentercategory__tkio_suitetrace_sftp_category">
+  <center>BASIC</center>
+  <centertab>[scriptid=custcentertab_tkio_suitetrace_centertab]</centertab>
+  <label>SuiteTrace Connect</label>
+  <links>
+    <link>
+      <linklabel></linklabel>
+      <linkobject>[scriptid=customrecord_suitetrace_sftp_config]</linkobject>
+      <linktasktype>LIST</linktasktype>
+      <shortlist>F</shortlist>
+    </link>
+  </links>
+</centercategory>

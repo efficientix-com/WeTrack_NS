@@ -1,15 +1,15 @@
-<suitelet scriptid="customscript_tkio_wetrackntrace_serv_sl">
+<suitelet scriptid="customscript_suitetrace_validxml_sl">
   <description></description>
   <isinactive>F</isinactive>
-  <name>TKIO - WeTrackNTrace service - SL</name>
+  <name>TKIO - SuiteTrace ValidateXML - SL</name>
   <notifyadmins>F</notifyadmins>
   <notifyemails></notifyemails>
   <notifyowner>T</notifyowner>
   <notifyuser>F</notifyuser>
-  <scriptfile>[/SuiteScripts/WeTrack&amp;Trace/TKIO - WeTrackNTrace service - SL.js]</scriptfile>
+  <scriptfile>[/SuiteScripts/SuiteTrace/TKIO - SuiteTrace ValidateXML - SL.js]</scriptfile>
   <scriptdeployments>
-    <scriptdeployment scriptid="customdeploy_tkio_wetrackntrace_serv_sl">
-      <allemployees>F</allemployees>
+    <scriptdeployment scriptid="customdeploy_suitetrace_validxml_sl">
+      <allemployees>T</allemployees>
       <allpartners>F</allpartners>
       <allroles>T</allroles>
       <audslctrole></audslctrole>
@@ -18,8 +18,8 @@
       <isonline>F</isonline>
       <loglevel>DEBUG</loglevel>
       <runasrole>ADMINISTRATOR</runasrole>
-      <status>TESTING</status>
-      <title>TKIO - WeTrackNTrace service - SL</title>
+      <status>RELEASED</status>
+      <title>TKIO - SuiteTrace ValidateXML - SL</title>
     </scriptdeployment>
   </scriptdeployments>
 </suitelet>

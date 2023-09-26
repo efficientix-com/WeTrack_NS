@@ -28,7 +28,7 @@ define(['N/file', 'N/https', 'N/log', 'N/ui/serverWidget', 'N/xml', 'N/record', 
         var global_obj_single_items_receiving = [];
         var global_obj_receiving = [];
         var file_id_uploaded = null;
-        var CUSTOM_RECORD_ID_EPCIS = 'customrecord_tkio_wetrack_xml';
+        var CUSTOM_RECORD_ID_EPCIS = 'customrecord_suitetrace_xml';
         var CUSTOM_RECORD_ID = 'customrecord_wetrack_transaction';
         var CUSTOM_SHIPMENT_CONTENT_RECORD_ID = 'customrecord_tkio_wetrack_shipment_cntnt';
         const onRequest = (scriptContext) => {
@@ -175,7 +175,7 @@ define(['N/file', 'N/https', 'N/log', 'N/ui/serverWidget', 'N/xml', 'N/record', 
                 const customrecord_tkio_wetrack_xmlSearchColTransactionDate = search.createColumn({ name: 'custrecord_wetrack_xml_date' });
 
                 const customrecord_tkio_wetrack_xmlSearch = search.create({
-                    type: 'customrecord_tkio_wetrack_xml',
+                    type: 'customrecord_suitetrace_xml',
                     filters: [],
                     columns: [
                         customrecord_tkio_wetrack_xmlSearchColId,

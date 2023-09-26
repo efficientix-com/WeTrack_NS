@@ -21,7 +21,7 @@ define(['N/log', 'N/encode', 'N/file', 'N/xml', 'N/record', 'N/search', 'N/runti
         var id_record_transactionInformation = '';
         
         const CUSTOM_RECORD_ID_SUITETRACE_GRP = 'customrecord_tkio_suitetrace_grouping';
-        const CUSTOM_RECORD_ID_EPCIS = 'customrecord_tkio_wetrack_xml';
+        const CUSTOM_RECORD_ID_EPCIS = 'customrecord_suitetrace_xml';
         const CUSTOM_RECORD_EPCIS_TRANSACTION = 'customrecord_tkio_wetrack_epcis_transact';
         const CUSTOM_RECORD_ID = 'customrecord_wetrack_transaction';
         const CUSTOM_SHIPMENT_CONTENT_RECORD_ID = 'customrecord_tkio_wetrack_shipment_cntnt';

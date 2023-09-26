@@ -13,6 +13,7 @@
   <description>Agrupador de TI, TH y TS</description>
   <enabledle>T</enabledle>
   <enablekeywords>T</enablekeywords>
+  <enablemailmerge>F</enablemailmerge>
   <enablenametranslation>F</enablenametranslation>
   <enablenumbering>F</enablenumbering>
   <enableoptimisticlocking>T</enableoptimisticlocking>

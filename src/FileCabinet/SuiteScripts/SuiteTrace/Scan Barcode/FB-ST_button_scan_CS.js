@@ -172,7 +172,7 @@ function(log, url) {
                 hostType: url.HostType.APPLICATION
             });
             let portal = url.resolveScript({
-                scriptId: 'customscript_tkio_wetrackntrace_index_sl',
+                scriptId: 'customscript_suitetrace_index_sl',
                 deploymentId: 'customdeploy_tkio_wetrackntrace_index_sl'
             });
             let directionVue = '&whence=#/scan-transaction?transaction=' + idTrans;

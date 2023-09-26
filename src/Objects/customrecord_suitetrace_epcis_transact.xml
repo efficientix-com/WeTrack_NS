@@ -1,4 +1,4 @@
-<customrecordtype scriptid="customrecord_tkio_wetrack_epcis_transact">
+<customrecordtype scriptid="customrecord_suitetrace_epcis_transact">
   <accesstype>CUSTRECORDENTRYPERM</accesstype>
   <allowattachments>T</allowattachments>
   <allowinlinedeleting>F</allowinlinedeleting>
@@ -13,6 +13,7 @@
   <description></description>
   <enabledle>T</enabledle>
   <enablekeywords>T</enablekeywords>
+  <enablemailmerge>F</enablemailmerge>
   <enablenametranslation>F</enablenametranslation>
   <enablenumbering>F</enablenumbering>
   <enableoptimisticlocking>T</enableoptimisticlocking>
@@ -118,7 +119,7 @@
       <storevalue>T</storevalue>
       <subtab></subtab>
     </customrecordcustomfield>
-    <customrecordcustomfield scriptid="custrecord_tkio_wetrack_lot_number">
+    <customrecordcustomfield scriptid="custrecord_suitetrace_lot_number">
       <accesslevel>2</accesslevel>
       <allowquickadd>F</allowquickadd>
       <applyformatting>F</applyformatting>
@@ -196,7 +197,7 @@
       <storevalue>T</storevalue>
       <subtab></subtab>
     </customrecordcustomfield>
-    <customrecordcustomfield scriptid="custrecord_wetrack_gtin">
+    <customrecordcustomfield scriptid="custrecord_suitetrace_gtin">
       <accesslevel>2</accesslevel>
       <allowquickadd>F</allowquickadd>
       <applyformatting>F</applyformatting>
@@ -235,7 +236,7 @@
       <storevalue>T</storevalue>
       <subtab></subtab>
     </customrecordcustomfield>
-    <customrecordcustomfield scriptid="custrecord_tkio_wetrack_sgln">
+    <customrecordcustomfield scriptid="custrecord_suitetrace_sgln">
       <accesslevel>2</accesslevel>
       <allowquickadd>F</allowquickadd>
       <applyformatting>F</applyformatting>
@@ -352,7 +353,7 @@
       <storevalue>T</storevalue>
       <subtab></subtab>
     </customrecordcustomfield>
-    <customrecordcustomfield scriptid="custrecord_tkio_wetrack_level_1">
+    <customrecordcustomfield scriptid="custrecord_suitetrace_level_1">
       <accesslevel>2</accesslevel>
       <allowquickadd>F</allowquickadd>
       <applyformatting>F</applyformatting>
@@ -391,7 +392,7 @@
       <storevalue>T</storevalue>
       <subtab></subtab>
     </customrecordcustomfield>
-    <customrecordcustomfield scriptid="custrecord_tkio_wetrack_level_2">
+    <customrecordcustomfield scriptid="custrecord_suitetrace_level_2">
       <accesslevel>2</accesslevel>
       <allowquickadd>F</allowquickadd>
       <applyformatting>F</applyformatting>
@@ -430,7 +431,7 @@
       <storevalue>T</storevalue>
       <subtab></subtab>
     </customrecordcustomfield>
-    <customrecordcustomfield scriptid="custrecord_tkio_wetrack_level_3">
+    <customrecordcustomfield scriptid="custrecord_suitetrace_level_3">
       <accesslevel>2</accesslevel>
       <allowquickadd>F</allowquickadd>
       <applyformatting>F</applyformatting>
@@ -703,7 +704,7 @@
       <storevalue>T</storevalue>
       <subtab></subtab>
     </customrecordcustomfield>
-    <customrecordcustomfield scriptid="custrecord_wetrack_ti_id_related">
+    <customrecordcustomfield scriptid="custrecord_suitetrace_ti_id_related">
       <accesslevel>2</accesslevel>
       <allowquickadd>F</allowquickadd>
       <applyformatting>F</applyformatting>

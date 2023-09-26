@@ -21,8 +21,14 @@
       <feature required="false">RECEIVABLES</feature>
       <feature required="false">CREATESUITEBUNDLES</feature>
       <feature required="false">PAYABLES</feature>
+      <feature required="false">ASSEMBLIES</feature>
+      <feature required="false">FULFILLMENTREQUEST</feature>
+      <feature required="false">OPPORTUNITIES</feature>
+      <feature required="false">WEBSTORE</feature>
+      <feature required="false">WORKORDERS</feature>
     </features>
-    
-    
+    <objects>
+      <object>customrecord_suitetrace_sftp_config</object>
+    </objects>
   </dependencies>
 </manifest>

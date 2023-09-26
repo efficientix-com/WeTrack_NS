@@ -5,7 +5,7 @@
   <notifyadmins>F</notifyadmins>
   <notifyemails></notifyemails>
   <notifyowner>T</notifyowner>
-  <scriptfile>[/SuiteScripts/WeTrack&amp;Trace/TKIO - SuiteTrace File Scanning - MR.js]</scriptfile>
+  <scriptfile>[/SuiteScripts/SuiteTrace/TKIO - SuiteTrace File Scanning - MR.js]</scriptfile>
   <scriptcustomfields>
     <scriptcustomfield scriptid="custscript_tkio_suitetrace_mail_sender">
       <accesslevel>2</accesslevel>

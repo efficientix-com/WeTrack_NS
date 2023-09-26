@@ -1,4 +1,4 @@
-<customrecordtype scriptid="customrecord_tkio_wetrack_xml">
+<customrecordtype scriptid="customrecord_suitetrace_xml">
   <accesstype>CUSTRECORDENTRYPERM</accesstype>
   <allowattachments>T</allowattachments>
   <allowinlinedeleting>F</allowinlinedeleting>
@@ -30,7 +30,7 @@
   <numberingmindigits></numberingmindigits>
   <numberingprefix></numberingprefix>
   <numberingsuffix></numberingsuffix>
-  <recordname>TKIO - WeTrack XML</recordname>
+  <recordname>TKIO - SuiteTrace XML</recordname>
   <showcreationdate>F</showcreationdate>
   <showcreationdateonlist>F</showcreationdateonlist>
   <showid>T</showid>

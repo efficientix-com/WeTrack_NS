@@ -10,7 +10,7 @@
  * Client              -> Tekiio
  * Last modification   -> 11/09/2023
  * Modified by         -> Dylan Mendoza <dylan.mendoza@freebug.mx>
- * Script in NS        -> TKIO - WeTrackNTrace service - SL <customscript_tkio_wetrackntrace_serv_sl>
+ * Script in NS        -> TKIO - WeTrackNTrace service - SL <customscript_suitetrace_service_sl>
  */
 define(['N/config', 'N/url', 'N/log', 'N/search', 'N/record', 'N/format', 'N/query', 'N/runtime', './Netsuite_Lib/Enum/TKIO - Const Lib', './Netsuite_Lib/Mod/SuiteTrace_moment'],
     (config, url, log, search, record, format, query, runtime, constLib, moment) => {

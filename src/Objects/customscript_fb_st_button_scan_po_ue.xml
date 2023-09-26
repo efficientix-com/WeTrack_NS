@@ -6,7 +6,7 @@
   <notifyemails></notifyemails>
   <notifyowner>T</notifyowner>
   <notifyuser>F</notifyuser>
-  <scriptfile>[/SuiteScripts/WeTrack&amp;Trace/Scan Barcode/FB-ST_button_scan_UE.js]</scriptfile>
+  <scriptfile>[/SuiteScripts/SuiteTrace/Scan Barcode/FB-ST_button_scan_UE.js]</scriptfile>
   <scriptdeployments>
     <scriptdeployment scriptid="customdeploy_fb_st_button_scan_po_ue">
       <allemployees>T</allemployees>
