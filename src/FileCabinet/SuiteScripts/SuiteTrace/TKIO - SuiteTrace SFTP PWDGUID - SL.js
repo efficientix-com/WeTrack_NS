@@ -127,6 +127,14 @@ define(['N/log', 'N/http', 'N/redirect', 'N/ui/serverWidget', 'N/record','N/sftp
                     hostKey: suitetrace_hostKey
                 });
                 if(connection){
+                    let objConnectionList=connection.list({
+                        path:'/',
+                        sort:sftp.Sort.SIZE
+                    });
+                    log.audit({
+                        title: "CONNECTION LIST OF PATHS",
+                        details: objConnectionList
+                    });
                     return 'Connection was successful to server:'+suitetrace_sftpServer
                 }else{
                     return 'Connection failed. Please verify credentials'
