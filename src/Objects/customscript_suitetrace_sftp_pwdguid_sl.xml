@@ -1,0 +1,25 @@
+<suitelet scriptid="customscript_suitetrace_sftp_pwdguid_sl">
+  <description></description>
+  <isinactive>F</isinactive>
+  <name>TKIO - SuiteTrace SFTP PWDGUID - SL</name>
+  <notifyadmins>F</notifyadmins>
+  <notifyemails></notifyemails>
+  <notifyowner>T</notifyowner>
+  <notifyuser>F</notifyuser>
+  <scriptfile>[/SuiteScripts/SuiteTrace/TKIO - SuiteTrace SFTP PWDGUID - SL.js]</scriptfile>
+  <scriptdeployments>
+    <scriptdeployment scriptid="customdeploy_suitetrace_sftp_pwdguid_sl">
+      <allemployees>T</allemployees>
+      <allpartners>F</allpartners>
+      <allroles>T</allroles>
+      <audslctrole></audslctrole>
+      <eventtype></eventtype>
+      <isdeployed>T</isdeployed>
+      <isonline>F</isonline>
+      <loglevel>DEBUG</loglevel>
+      <runasrole>ADMINISTRATOR</runasrole>
+      <status>RELEASED</status>
+      <title>TKIO - SuiteTrace SFTP PWDGUID - SL</title>
+    </scriptdeployment>
+  </scriptdeployments>
+</suitelet>
