@@ -2,9 +2,9 @@
  * @NApiVersion 2.1
  * @NScriptType Suitelet
  */
-define(['N/log', 'N/http', 'N/redirect', 'N/ui/serverWidget', 'N/record','N/sftp'],
+define(['N/log', 'N/http', 'N/redirect', 'N/ui/serverWidget', 'N/record', 'N/sftp', 'N/file'],
 
-    (log, http, redirect, serverWidget, record,sftp) => {
+    (log, http, redirect, serverWidget, record, sftp, file) => {
         /**
          * Defines the Suitelet script trigger point.
          * @param {Object} scriptContext
@@ -95,7 +95,7 @@ define(['N/log', 'N/http', 'N/redirect', 'N/ui/serverWidget', 'N/record','N/sftp
                     type: 'customrecord_suitetrace_sftp_config',
                     id: idRecord
                 });
-        
+
                 let suitetrace_sftpUser = configRec.getValue({
                     fieldId: 'custrecord_suitetrace_sftp_username'
                 });
@@ -114,29 +114,67 @@ define(['N/log', 'N/http', 'N/redirect', 'N/ui/serverWidget', 'N/record','N/sftp
                 let suitetrace_sftpDir = configRec.getValue({
                     fieldId: 'custrecord_suitetrace_sftp_output_fd'
                 });
+                let suitetrace_inputDir = configRec.getValue({
+                    fieldId: 'custrecord_suitetrace_sftp_input_fd'
+                });
+                let suitetrace_test_file = configRec.getValue({
+                    fieldId: 'custrecord_suitetrace_sftp_test_file'
+                });
                 log.debug({
                     title: "SFTP record data",
-                    details: suitetrace_sftpUser+', '+suitetrace_sftpGUID+', '+suitetrace_sftpServer+', '+suitetrace_portNbr+', '+suitetrace_hostKey+', '+suitetrace_sftpDir
+                    details: suitetrace_sftpUser + ', ' + suitetrace_sftpGUID + ', ' + suitetrace_sftpServer + ', ' + suitetrace_portNbr + ', ' + suitetrace_hostKey + ', ' + suitetrace_sftpDir
                 })
                 var connection = sftp.createConnection({
                     username: suitetrace_sftpUser,
                     passwordGuid: suitetrace_sftpGUID,
                     url: suitetrace_sftpServer,
                     port: parseInt(suitetrace_portNbr),
-                    directory: suitetrace_sftpDir,
+                    directory: '/',
                     hostKey: suitetrace_hostKey
                 });
-                if(connection){
-                    let objConnectionList=connection.list({
-                        path:'/',
-                        sort:sftp.Sort.SIZE
+                if (connection) {
+                    if (suitetrace_inputDir !== '' && suitetrace_test_file !== '') {
+                        var file_to_upload = file.load({
+                            id: suitetrace_test_file
+                        });
+                        let file_name = file_to_upload.name;
+                        connection.upload({
+                            directory: suitetrace_inputDir,
+                            filename: file_name,
+                            file: file_to_upload,
+                            replaceExisting: true
+                        });
+                        log.debug({
+                            title: "Tried to upload file",
+                            details: true
+                        });
+                    }
+                    let objConnectionList_input = connection.list({
+                        path: suitetrace_inputDir,
+                        sort: sftp.Sort.SIZE
+                    });
+                    let objConnectionList_output = connection.list({
+                        path: suitetrace_sftpDir,
+                        sort: sftp.Sort.SIZE
+                    });
+                    let objConnectionList_parent_folder = connection.list({
+                        path: '/',
+                        sort: sftp.Sort.SIZE
                     });
                     log.audit({
-                        title: "CONNECTION LIST OF PATHS",
-                        details: objConnectionList
+                        title: "CONNECTION LIST OF PATHS PARENT FOLDER",
+                        details: objConnectionList_parent_folder
                     });
-                    return 'Connection was successful to server:'+suitetrace_sftpServer
-                }else{
+                    log.audit({
+                        title: "CONNECTION LIST OF PATHS INPUT",
+                        details: objConnectionList_input
+                    });
+                    log.audit({
+                        title: "CONNECTION LIST OF PATHS OUTPUT",
+                        details: objConnectionList_output
+                    });
+                    return 'Connection was successful to server:' + suitetrace_sftpServer
+                } else {
                     return 'Connection failed. Please verify credentials'
                 }
             } catch (err) {

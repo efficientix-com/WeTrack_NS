@@ -28,7 +28,7 @@ define(['N/url', 'N/log', 'N/https', 'N/redirect', 'N/ui/serverWidget'],
                     title: "CURRENT RECORD BEFORELOAD",
                     details: id_record
                 })
-                if (sftp_guid_fld !== '') {
+                if (sftp_guid_fld !== '' && scriptContext.type !== scriptContext.UserEventType.EDIT) {
                     objForm.addButton({
                         id: "custpage_test_connection_sftp",
                         label: "Test Connection",
