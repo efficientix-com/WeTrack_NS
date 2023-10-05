@@ -1,4 +1,5 @@
-import fs from 'fs';
+// import fs from 'fs';
+fs=require('fs')
 
 // Function to parse X12 data into JSON
 function parseX12ToJSON(x12) {

@@ -16,8 +16,23 @@ function(log,https,url,dialog) {
      *
      * @since 2015.2
      */
+    var global_asn_not_valid=false;
+    var type;
     function pageInit(scriptContext) {
+        type=scriptContext.mode
+    }
 
+    function onASN_alert(){
+        try{
+            dialog.alert({
+                title: "SuiteTrace ASN Configuration",
+                message: "You cannot have more ASN configurations than your number of subsidiaries. Please edit the configurations of your subsidiaries."
+            });
+            global_asn_not_valid=true;
+            
+        }catch(err){
+        console.error('Error occurred in onASN_alert',err);
+        }
     }
 
     /**
@@ -181,7 +196,25 @@ function(log,https,url,dialog) {
      * @since 2015.2
      */
     function saveRecord(scriptContext) {
-
+        try{
+            console.log("GET SAVE",global_asn_not_valid)
+            if(global_asn_not_valid===true){
+                dialog.alert({
+                    title: "SuiteTrace ASN Configuration",
+                    message: "Cannot add more than one configuration per Subsidiary"
+                });
+                return false
+            }else{
+                return true
+            }
+        }catch(err){
+            dialog.alert({
+                title: "SuiteTrace ASN Configuration",
+                message: err
+            });
+        console.error('Error occurred in saveRecord',err);
+        return false;
+        }
     }
 
     return {
@@ -195,7 +228,8 @@ function(log,https,url,dialog) {
         validateInsert: validateInsert,
         validateDelete: validateDelete,
         saveRecord: saveRecord,
-        onClickTestConnection:onClickTestConnection
+        onClickTestConnection:onClickTestConnection,
+        onASN_alert:onASN_alert
     };
     
 });
